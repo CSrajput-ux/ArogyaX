@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Prescriptions — ArogyaX</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="dashboard-layout">
+        {% include 'partials/doctor_sidebar.html' %}
+        
+        <main class="dashboard-main">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                <div>
+                    <h2 style="margin:0; font-weight:800; color:#0f172a; font-size:1.6rem;">Prescription History</h2>
+                    <p style="margin:4px 0 0; color:#64748b; font-size:0.9rem;">All digital prescriptions issued by you</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('clinical.clinical_cases') }}" class="btn" style="background:#0066ff; color:#fff; padding:10px 20px; border-radius:12px; font-weight:700; text-decoration:none;">
+                        <i class="fas fa-plus"></i> Add Prescription
+                    </a>
+                </div>
+            </div>
+
+            <!-- Cases Table -->
+            <div class="dash-section">
+                {% if prescriptions %}
+                <div class="appt-table-wrap">
+                    <table class="appt-table">
+                        <thead>
+                            <tr>
+                                <th>Rx ID</th>
+                                <th>Patient</th>
+                                <th>Date Issued</th>
+                                <th>Diagnosis</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rx in prescriptions %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight:800; color:#10b981;">{{ rx.rx_id }}</div>
+                                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Case: {{ rx.case_id }}</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight:700; color:#0f172a;">{{ rx.patient_name }}</div>
+                                </td>
+                                <td style="font-size:0.85rem; color:#334155;">
+                                    {% if rx.created_at and rx.created_at is string %}
+                                        {{ rx.created_at[:10] }}
+                                    {% elif rx.created_at %}
+                                        {{ rx.created_at.strftime('%Y-%m-%d') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span style="font-weight:600; color:#334155;">{{ rx.diagnosis }}</span>
+                                </td>
+                                <td style="text-align:right;">
+                                    <div style="display:inline-flex; gap:6px;">
+                                        <a href="{{ url_for('clinical.open_case', case_id=rx.case_id) }}" class="btn-xs" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px;" title="View Case">
+                                            <i class="fas fa-folder-open"></i>
+                                        </a>
+                                        <a href="{{ url_for('clinical.download_rx', rx_id=rx.rx_id) }}" class="btn-xs" style="background:#0f52ab; color:#fff; border-radius:8px; padding:6px 12px; font-weight:700;">
+                                            <i class="fas fa-file-pdf"></i> View PDF
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state" style="padding:48px 24px;text-align:center;">
+                    <i class="fas fa-file-prescription" style="font-size:3rem;color:#cbd5e1;margin-bottom:14px;display:block;"></i>
+                    <h4 style="font-size:1.1rem;font-weight:800;color:#334155;margin:0 0 6px 0;">No Prescriptions Yet</h4>
+                    <p style="color:#94a3b8;font-size:0.9rem;margin:0;">You haven't issued any digital prescriptions.</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

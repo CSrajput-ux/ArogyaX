@@ -660,16 +660,22 @@
                         <span style="font-size:0.75rem;background:#059669;color:#ffffff;padding:2px 8px;border-radius:4px;font-weight:700;">Verified</span>
                     </div>
 
-                    <label>Prescribed Medicines & Dosage</label>
-                    <textarea rows="3" placeholder="e.g. Tab Paracetamol 500mg (1-0-1 after meals for 3 days)&#10;Tab Cetirizine 10mg (0-0-1 at night)">Tab Paracetamol 500mg (1-0-1) - 3 days
-Tab Vitamin C 500mg (1-0-0) - 5 days</textarea>
+                    {% if role == 'doctor' %}
+                        <label>Prescribed Medicines & Dosage</label>
+                        <textarea id="rxMedicines" rows="3" placeholder="e.g. Tab Paracetamol 500mg (1-0-1 after meals for 3 days)&#10;Tab Cetirizine 10mg (0-0-1 at night)"></textarea>
 
-                    <label>Clinical Advice & Lifestyle Instructions</label>
-                    <textarea rows="2" placeholder="Dietary restrictions, rest, fluid intake...">Drink plenty of warm fluids. Avoid cold beverages. Rest for 48 hours.</textarea>
+                        <label>Clinical Advice & Lifestyle Instructions</label>
+                        <textarea id="rxAdvice" rows="2" placeholder="Dietary restrictions, rest, fluid intake..."></textarea>
 
-                    <button onclick="alert('Digital prescription saved to your ArogyaX Medical Vault!')" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg, #0066ff, #0052cc);color:#ffffff;border:none;font-weight:800;cursor:pointer;">
-                        <i class="fas fa-download"></i> Save to Health Vault
-                    </button>
+                        <button onclick="savePrescription('{{ appointment_id }}')" id="saveRxBtn" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg, #0066ff, #0052cc);color:#ffffff;border:none;font-weight:800;cursor:pointer;margin-top:10px;">
+                            <i class="fas fa-download"></i> Save & Generate PDF
+                        </button>
+                    {% else %}
+                        <div style="text-align:center; padding:20px; color:#94a3b8;">
+                            <i class="fas fa-user-md" style="font-size:2rem; margin-bottom:10px; color:#38bdf8;"></i>
+                            <p>Your doctor is currently reviewing your case. Any prescriptions generated will securely appear in your Health Vault after the consultation.</p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -798,6 +804,48 @@ Tab Vitamin C 500mg (1-0-0) - 5 days</textarea>
                 }
                 window.location.href = "/";
             }
+        }
+        
+        function savePrescription(appointmentId) {
+            const btn = document.getElementById('saveRxBtn');
+            const meds = document.getElementById('rxMedicines').value;
+            const adv = document.getElementById('rxAdvice').value;
+            
+            if(!meds.trim()) {
+                alert("Please add at least one medicine to generate a prescription.");
+                return;
+            }
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+            
+            fetch('/doctor/video-consultation/save-notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    medicines: meds,
+                    instructions: adv
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Saved to Vault';
+                    btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                    setTimeout(() => alert(data.message), 300);
+                } else {
+                    alert("Error: " + data.message);
+                    btn.innerHTML = '<i class="fas fa-download"></i> Save & Generate PDF';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Network error while saving prescription.");
+                btn.innerHTML = '<i class="fas fa-download"></i> Save & Generate PDF';
+                btn.disabled = false;
+            });
         }
 
         document.addEventListener('DOMContentLoaded', initLocalCamera);

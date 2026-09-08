@@ -11,10 +11,23 @@
     </div>
     <div class="sidebar-section">Clinical Hub</div>
     <nav class="sidebar-nav">
-        <a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="{{url_for('doctor_patients')}}" class="{% if 'doctor-patients' in request.path %}active{% endif %}"><i class="fas fa-user-injured"></i> My Patients</a>
-        <a href="{{url_for('videocall_direct')}}" class="{% if 'videocall' in request.path %}active{% endif %}"><i class="fas fa-video"></i> Video Consult</a>
-        <a href="{{url_for('doctor_profile_edit')}}" class="{% if 'doctor-profile-edit' in request.path %}active{% endif %}"><i class="fas fa-user-md"></i> Practice Profile</a>
+        <a href="{{ url_for('clinical.doctor_dashboard') }}" class="nav-item {% if request.endpoint == 'clinical.doctor_dashboard' %}active{% endif %}">
+            <i class="fas fa-home"></i> Dashboard
+        </a>
+        
+        <div class="nav-section-title">CLINICAL WORKSPACE</div>
+        
+        <a href="{{ url_for('clinical.my_patients') }}" class="nav-item {% if request.endpoint == 'clinical.my_patients' %}active{% endif %}">
+            <i class="fas fa-users"></i> My Patients
+        </a>
+        
+        <a href="{{ url_for('clinical.clinical_cases') }}" class="nav-item {% if request.endpoint == 'clinical.clinical_cases' %}active{% endif %}">
+            <i class="fas fa-notes-medical"></i> Clinical Cases
+        </a>
+        
+        <a href="{{ url_for('clinical.doctor_prescriptions') }}" class="nav-item {% if request.endpoint == 'clinical.doctor_prescriptions' %}active{% endif %}">
+            <i class="fas fa-file-prescription"></i> Prescriptions
+        </a>
     </nav>
     <div class="sidebar-section">AI Diagnostic Suite</div>
     <nav class="sidebar-nav">
