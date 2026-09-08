@@ -12,10 +12,9 @@ Flask-Bcrypt==1.0.1
 
 # AI & ML
 google-genai>=1.5.0
-scikit-learn==1.5.0
-pandas==2.2.2
-numpy==1.26.4
-tensorflow==2.16.1
+scikit-learn
+pandas
+numpy
 Pillow>=10.0.0
 
 # PDF generation
