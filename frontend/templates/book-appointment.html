@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment — ArogyaX Healthcare</title>
+    <meta name="description" content="Schedule in-clinic visits or online consultations with verified medical specialists on ArogyaX.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .booking-page-wrap {
+            max-width: 1060px;
+            margin: 96px auto 60px;
+            padding: 0 20px;
+        }
+
+        .booking-hero {
+            background: linear-gradient(135deg, #072249 0%, #0c3d82 45%, #0f52ab 100%);
+            border-radius: 24px;
+            padding: 32px 36px;
+            color: #ffffff;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 36px rgba(7, 34, 73, 0.25);
+        }
+
+        .booking-hero h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            color: #ffffff;
+        }
+
+        .booking-hero p {
+            font-size: 0.96rem;
+            opacity: 0.92;
+            margin: 0;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        .step-section-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            margin-bottom: 24px;
+        }
+
+        .step-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .step-badge-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0066ff, #0052cc);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .step-card-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        /* Doctor Selection Grid */
+        .doctor-select-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 14px;
+        }
+
+        .doc-select-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+        }
+
+        .doc-select-card:hover {
+            border-color: #93c5fd;
+            background: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .doc-select-card.selected {
+            border-color: #0066ff;
+            background: #eff6ff;
+            box-shadow: 0 4px 16px rgba(0, 102, 255, 0.15);
+        }
+
+        .doc-sel-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0066ff, #7c5cfc);
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .doc-sel-info h4 {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 2px 0;
+        }
+
+        .doc-sel-spec {
+            font-size: 0.8rem;
+            color: #0066ff;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .doc-sel-sub {
+            font-size: 0.76rem;
+            color: #64748b;
+        }
+
+        .check-indicator {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            color: #0066ff;
+            font-size: 1.1rem;
+            display: none;
+        }
+
+        .doc-select-card.selected .check-indicator {
+            display: block;
+        }
+
+        /* Time Slots */
+        .time-slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 10px;
+        }
+
+        .time-slot-btn {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .time-slot-btn:hover {
+            border-color: #0066ff;
+            color: #0066ff;
+            background: #eff6ff;
+        }
+
+        .time-slot-btn.selected {
+            background: #0066ff;
+            border-color: #0066ff;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+        }
+
+        /* Patient Form Grid */
+        .patient-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .patient-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-field-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .form-field-group input, .form-field-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            font-family: inherit;
+            font-size: 0.92rem;
+            color: #0f172a;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .form-field-group input:focus, .form-field-group select:focus {
+            outline: none;
+            border-color: #0066ff;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+        }
+
+        .btn-confirm-appt {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+            color: #ffffff;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm-appt:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 102, 255, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/" class="logo">
+            <div class="logo-brand-icon">
+                <i class="fas fa-heart-pulse"></i>
+            </div>
+            <span class="brand-name">Arogya<span>X</span></span>
+        </a>
+        <nav class="navbar">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="{{ url_for('doctors_directory') }}"><i class="fas fa-user-md"></i> Find Doctors</a>
+            <a href="{{ url_for('order_medicines') }}"><i class="fas fa-pills"></i> Order Medicines</a>
+            <div class="user-pill">
+                <div class="avatar">{{ username[0]|upper if username else 'P' }}</div>
+                <span>{{ username or 'Patient' }}</span>
+            </div>
+        </nav>
+    </header>
+
+    <div class="booking-page-wrap">
+        <!-- Hero Banner -->
+        <div class="booking-hero">
+            <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:999px;font-size:0.8rem;font-weight:700;margin-bottom:10px;">
+                <i class="fas fa-calendar-check"></i> Fast Appointment Booking
+            </div>
+            <h1>Schedule Your Specialist Visit</h1>
+            <p>Select your preferred clinical specialist, pick a convenient time slot, and confirm your patient details for priority OPD consultation.</p>
+        </div>
+
+        <form action="{{ url_for('book_appointment') }}" method="POST" id="bookingForm">
+            <!-- STEP 1: SELECT SPECIALIST -->
+            <div class="step-section-card">
+                <div class="step-card-header">
+                    <div class="step-badge-num">1</div>
+                    <div>
+                        <h2>Select Specialist Physician</h2>
+                        <span style="font-size:0.82rem;color:#64748b;">Choose the doctor or medical department for your visit</span>
+                    </div>
+                </div>
+
+                <input type="hidden" name="type_of_doctor" id="selectedDoctorInput" required>
+
+                <div class="doctor-select-grid">
+                    <!-- Doctor 1: Cardiologist -->
+                    <div class="doc-select-card" onclick="selectDoctor('Cardiologist', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #ef4444, #f43f5e);">PS</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Priya Sharma</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-heartbeat"></i> Cardiologist</div>
+                            <div class="doc-sel-sub">⭐ 4.8 • 10+ yrs exp • ₹800</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 2: Neurologist -->
+                    <div class="doc-select-card" onclick="selectDoctor('Neurologist', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9);">RV</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Rahul Verma</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-brain"></i> Neurologist</div>
+                            <div class="doc-sel-sub">⭐ 4.7 • 8+ yrs exp • ₹1,000</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 3: Dermatologist -->
+                    <div class="doc-select-card" onclick="selectDoctor('Dermatologist', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #f59e0b, #d97706);">AM</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Ananya Mehta</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-allergies"></i> Dermatologist</div>
+                            <div class="doc-sel-sub">⭐ 4.9 • 6+ yrs exp • ₹700</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 4: General Physician -->
+                    <div class="doc-select-card" onclick="selectDoctor('General Physician', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #0066ff, #0284c7);">NK</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Neha Kapoor</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-stethoscope"></i> General Physician</div>
+                            <div class="doc-sel-sub">⭐ 4.8 • 9+ yrs exp • ₹500</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 5: Orthopedic -->
+                    <div class="doc-select-card" onclick="selectDoctor('Orthopedic', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #00bfa6, #0d9488);">SI</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Suresh Iyer</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-bone"></i> Orthopedic</div>
+                            <div class="doc-sel-sub">⭐ 4.6 • 12+ yrs exp • ₹900</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 6: Pediatrician -->
+                    <div class="doc-select-card" onclick="selectDoctor('Pediatrician', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #ec4899, #db2777);">AS</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Amit Singh</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-baby"></i> Pediatrician</div>
+                            <div class="doc-sel-sub">⭐ 4.7 • 7+ yrs exp • ₹600</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 7: Pulmonologist -->
+                    <div class="doc-select-card" onclick="selectDoctor('Pulmonologist', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #10b981, #059669);">SK</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Sandeep Kaur</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-lungs"></i> Pulmonologist</div>
+                            <div class="doc-sel-sub">⭐ 4.8 • 8+ yrs exp • ₹600</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+
+                    <!-- Doctor 8: Ophthalmologist -->
+                    <div class="doc-select-card" onclick="selectDoctor('Ophthalmologist', this)">
+                        <div class="doc-sel-avatar" style="background:linear-gradient(135deg, #06b6d4, #0891b2);">PN</div>
+                        <div class="doc-sel-info">
+                            <h4>Dr. Priya Nair</h4>
+                            <div class="doc-sel-spec"><i class="fas fa-eye"></i> Ophthalmologist</div>
+                            <div class="doc-sel-sub">⭐ 4.9 • 10+ yrs exp • ₹700</div>
+                        </div>
+                        <i class="fas fa-circle-check check-indicator"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: SELECT TIME SLOT -->
+            <div class="step-section-card">
+                <div class="step-card-header">
+                    <div class="step-badge-num">2</div>
+                    <div>
+                        <h2>Select Preferred Time Slot</h2>
+                        <span style="font-size:0.82rem;color:#64748b;">Consultation slots available today & tomorrow</span>
+                    </div>
+                </div>
+
+                <input type="hidden" name="time_slot" id="selectedTimeInput" required>
+
+                <div class="time-slots-grid">
+                    <div class="time-slot-btn" onclick="selectTime('09:00 AM - 10:00 AM', this)">09:00 AM - 10:00 AM</div>
+                    <div class="time-slot-btn" onclick="selectTime('10:00 AM - 11:00 AM', this)">10:00 AM - 11:00 AM</div>
+                    <div class="time-slot-btn" onclick="selectTime('11:00 AM - 12:00 PM', this)">11:00 AM - 12:00 PM</div>
+                    <div class="time-slot-btn" onclick="selectTime('12:00 PM - 01:00 PM', this)">12:00 PM - 01:00 PM</div>
+                    <div class="time-slot-btn" onclick="selectTime('02:00 PM - 03:00 PM', this)">02:00 PM - 03:00 PM</div>
+                    <div class="time-slot-btn" onclick="selectTime('03:00 PM - 04:00 PM', this)">03:00 PM - 04:00 PM</div>
+                    <div class="time-slot-btn" onclick="selectTime('04:00 PM - 05:00 PM', this)">04:00 PM - 05:00 PM</div>
+                    <div class="time-slot-btn" onclick="selectTime('05:00 PM - 06:00 PM', this)">05:00 PM - 06:00 PM</div>
+                </div>
+            </div>
+
+            <!-- STEP 3: PATIENT INFORMATION -->
+            <div class="step-section-card">
+                <div class="step-card-header">
+                    <div class="step-badge-num">3</div>
+                    <div>
+                        <h2>Patient Information</h2>
+                        <span style="font-size:0.82rem;color:#64748b;">Enter contact and medical vitals for prescription generation</span>
+                    </div>
+                </div>
+
+                <div class="patient-form-grid">
+                    <div class="form-field-group">
+                        <label>Patient Full Name</label>
+                        <input type="text" name="name" placeholder="e.g. John Doe" value="{{ username or '' }}" required>
+                    </div>
+                    <div class="form-field-group">
+                        <label>Contact Phone Number</label>
+                        <input type="tel" name="phone_number" placeholder="+91 98765 43210" required>
+                    </div>
+                    <div class="form-field-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" placeholder="patient@example.com" required>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-field-group">
+                            <label>Age</label>
+                            <input type="number" name="age" min="1" max="120" placeholder="e.g. 28" required>
+                        </div>
+                        <div class="form-field-group">
+                            <label>Blood Group</label>
+                            <select name="blood_group" required>
+                                <option value="" disabled selected>Select</option>
+                                <option>A+</option><option>A-</option>
+                                <option>B+</option><option>B-</option>
+                                <option>AB+</option><option>AB-</option>
+                                <option>O+</option><option>O-</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-confirm-appt" onclick="return validateBookingForm()">
+                <i class="fas fa-calendar-check"></i> Confirm Appointment Booking
+            </button>
+        </form>
+    </div>
+
+    <!-- Client-side Selection Logic -->
+    <script>
+        function selectDoctor(specialization, element) {
+            document.querySelectorAll('.doc-select-card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('selectedDoctorInput').value = specialization;
+        }
+
+        function selectTime(timeStr, element) {
+            document.querySelectorAll('.time-slot-btn').forEach(t => t.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('selectedTimeInput').value = timeStr;
+        }
+
+        function validateBookingForm() {
+            if (!document.getElementById('selectedDoctorInput').value) {
+                alert("Please select a medical specialist.");
+                return false;
+            }
+            if (!document.getElementById('selectedTimeInput').value) {
+                alert("Please select an appointment time slot.");
+                return false;
+            }
+            return true;
+        }
+
+        // Auto-select specialty if passed in URL query param
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const spec = urlParams.get('specialization');
+            if (spec) {
+                const cards = document.querySelectorAll('.doc-select-card');
+                for (let card of cards) {
+                    if (card.getAttribute('onclick') && card.getAttribute('onclick').toLowerCase().includes(spec.toLowerCase())) {
+                        card.click();
+                        break;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

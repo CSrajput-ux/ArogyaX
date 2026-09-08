@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal & Clinical Workspace — ArogyaX</title>
+    <meta name="description" content="AI-Powered Clinical Portal for Physicians on ArogyaX.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .doctor-hero-banner {
+            background: linear-gradient(135deg, #0052cc 0%, #0066ff 45%, #7c5cfc 100%);
+            border-radius: 24px;
+            padding: 32px 36px;
+            color: #ffffff;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 12px 36px rgba(0, 102, 255, 0.18);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doctor-hero-banner::after {
+            content: '';
+            position: absolute;
+            right: -30px;
+            bottom: -30px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .doc-greeting-title {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            color: #ffffff;
+        }
+
+        .doc-greeting-sub {
+            font-size: 0.96rem;
+            opacity: 0.92;
+            margin: 0;
+            max-width: 580px;
+            line-height: 1.5;
+        }
+
+        .doctor-stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 1200px) {
+            .doctor-stats-row {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .doctor-stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .doc-stat-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 20px 22px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doc-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(0, 102, 255, 0.1);
+        }
+
+        .doc-stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .doc-stat-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .doc-stat-num {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .doc-stat-label {
+            font-size: 0.82rem;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        /* Fast Clinical Action Toolbar */
+        .clinical-quick-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 992px) {
+            .clinical-quick-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .action-banner-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .action-banner-card.ai-card {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+            border-color: #ddd6fe;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        {% include 'partials/doctor_sidebar.html' %}
+
+        <!-- Main Content Area -->
+        <main class="dashboard-main">
+            <!-- Top Navigation -->
+            <div class="top-nav-bar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="font-size:1.3rem;font-weight:800;color:#0f172a;">Doctor Clinical Portal</div>
+                    <span style="background:#eff6ff;color:#0066ff;padding:4px 10px;border-radius:999px;font-size:0.78rem;font-weight:800;">
+                        <i class="fas fa-stethoscope"></i> {{ doctor.type_of_doctor or 'Medical Specialist' }}
+                    </span>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="notif-bell-btn" id="notifBell" onclick="toggleNotifications()" title="Notifications" style="position:relative;cursor:pointer;background:#ffffff;border:1px solid #e2e8f0;padding:9px 12px;border-radius:12px;">
+                        <i class="fas fa-bell" style="color:#475569;"></i>
+                        <span class="notif-badge" style="position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.7rem;display:flex;align-items:center;justify-content:center;font-weight:800;">2</span>
+                    </div>
+
+                    <div class="user-profile-pill" style="display:flex;align-items:center;gap:10px;background:#ffffff;border:1px solid #e2e8f0;padding:6px 14px;border-radius:14px;">
+                        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg, #0066ff, #7c5cfc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;">
+                            {{ username[0]|upper }}
+                        </div>
+                        <span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Dr. {{ username }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Dropdown Box -->
+            <div class="notif-dropdown-box" id="notifDropdown" style="display:none;position:absolute;right:32px;top:76px;width:340px;background:#ffffff;border-radius:16px;box-shadow:0 12px 36px rgba(15,23,42,0.15);border:1px solid #e2e8f0;z-index:100;padding:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+                    <strong style="font-size:0.92rem;color:#0f172a;">Clinical Alerts</strong>
+                    <span style="font-size:0.78rem;color:#0066ff;font-weight:700;cursor:pointer;">Mark all read</span>
+                </div>
+                <div style="display:flex;gap:10px;margin-bottom:12px;font-size:0.84rem;color:#334155;">
+                    <i class="fas fa-video" style="color:#0066ff;margin-top:2px;"></i>
+                    <div>
+                        <strong>Upcoming Video Call</strong>
+                        <p style="margin:2px 0 0;color:#64748b;font-size:0.78rem;">Patient waiting in Telehealth room #7712</p>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;font-size:0.84rem;color:#334155;">
+                    <i class="fas fa-file-medical" style="color:#7c5cfc;margin-top:2px;"></i>
+                    <div>
+                        <strong>New MRI Scan Uploaded</strong>
+                        <p style="margin:2px 0 0;color:#64748b;font-size:0.78rem;">Brain MRI report ready for AI clinical review</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doctor Welcome Banner -->
+            <div class="doctor-hero-banner">
+                <div>
+                    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:999px;font-size:0.8rem;font-weight:700;margin-bottom:10px;">
+                        <i class="fas fa-circle" style="color:#34d399;font-size:0.5rem;"></i> OPD Active & Ready
+                    </div>
+                    <h1 class="doc-greeting-title">Good day, Dr. {{ username|capitalize }} 👋</h1>
+                    <p class="doc-greeting-sub">
+                        Manage patient appointments, review AI-assisted radiological scans, conduct secure HD video consultations, and issue digital prescriptions.
+                    </p>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+                    <a href="{{ url_for('videocall_direct') }}" class="btn" style="background:#ffffff;color:#0052cc;font-weight:800;padding:10px 20px;border-radius:12px;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.15);">
+                        <i class="fas fa-video"></i> Start Telehealth Call
+                    </a>
+                    <a href="{{ url_for('doctor_profile_edit') }}" class="btn" style="background:rgba(255,255,255,0.15);color:#ffffff;font-weight:700;padding:8px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.3);font-size:0.85rem;">
+                        <i class="fas fa-user-gear"></i> Edit Profile & OPD
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="doctor-stats-row">
+                <!-- Stat 1: Total Appointments -->
+                <div class="doc-stat-card">
+                    <div class="doc-stat-header">
+                        <div class="doc-stat-icon-wrap" style="background:#eff6ff;color:#0066ff;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span style="font-size:0.75rem;background:#ecfdf5;color:#059669;padding:2px 6px;border-radius:4px;font-weight:800;">Today</span>
+                    </div>
+                    <div class="doc-stat-num">{{ appointments|length }}</div>
+                    <div class="doc-stat-label">Total Appointments</div>
+                </div>
+
+                <!-- Stat 2: Pending Review -->
+                <div class="doc-stat-card">
+                    <div class="doc-stat-header">
+                        <div class="doc-stat-icon-wrap" style="background:#fef3c7;color:#d97706;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <span style="font-size:0.75rem;background:#fef3c7;color:#b45309;padding:2px 6px;border-radius:4px;font-weight:800;">Action Required</span>
+                    </div>
+                    <div class="doc-stat-num" style="color:#d97706;">{{ appointments|selectattr('status','eq','Pending')|list|length }}</div>
+                    <div class="doc-stat-label">Pending Requests</div>
+                </div>
+
+                <!-- Stat 3: Approved / Ready -->
+                <div class="doc-stat-card">
+                    <div class="doc-stat-header">
+                        <div class="doc-stat-icon-wrap" style="background:#ecfdf5;color:#059669;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <span style="font-size:0.75rem;background:#eff6ff;color:#0066ff;padding:2px 6px;border-radius:4px;font-weight:800;">Ready</span>
+                    </div>
+                    <div class="doc-stat-num" style="color:#059669;">{{ appointments|selectattr('status','eq','Approved')|list|length }}</div>
+                    <div class="doc-stat-label">Approved Consults</div>
+                </div>
+
+                <!-- Stat 4: Prescribed -->
+                <div class="doc-stat-card">
+                    <div class="doc-stat-header">
+                        <div class="doc-stat-icon-wrap" style="background:#f5f3ff;color:#7c5cfc;">
+                            <i class="fas fa-file-prescription"></i>
+                        </div>
+                        <span style="font-size:0.75rem;background:#f5f3ff;color:#7c5cfc;padding:2px 6px;border-radius:4px;font-weight:800;">Vault</span>
+                    </div>
+                    <div class="doc-stat-num" style="color:#7c5cfc;">{{ appointments|selectattr('status','eq','Prescribed')|list|length }}</div>
+                    <div class="doc-stat-label">Prescriptions Issued</div>
+                </div>
+
+                <!-- Stat 5: Rating Score -->
+                <div class="doc-stat-card">
+                    <div class="doc-stat-header">
+                        <div class="doc-stat-icon-wrap" style="background:#fffbeb;color:#f59e0b;">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <span style="font-size:0.75rem;background:#ecfdf5;color:#059669;padding:2px 6px;border-radius:4px;font-weight:800;">Top 5%</span>
+                    </div>
+                    <div class="doc-stat-num">4.9</div>
+                    <div class="doc-stat-label">Patient Rating</div>
+                </div>
+            </div>
+
+            <!-- Quick Action Cards -->
+            <div class="clinical-quick-row">
+                <div class="action-banner-card">
+                    <div style="display:flex;align-items:center;gap:18px;">
+                        <div style="width:54px;height:54px;border-radius:16px;background:#eff6ff;color:#0066ff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size:1.15rem;font-weight:800;color:#0f172a;margin:0 0 4px 0;">Telehealth Virtual Waiting Room</h3>
+                            <p style="font-size:0.86rem;color:#64748b;margin:0;">Connect with patients via secure HD video, examine live scans, and issue real-time digital prescriptions.</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn btn-primary" style="padding:10px 22px;white-space:nowrap;font-weight:800;">
+                        Open Room
+                    </a>
+                </div>
+
+                <div class="action-banner-card ai-card">
+                    <div style="display:flex;align-items:center;gap:14px;">
+                        <div style="width:48px;height:48px;border-radius:14px;background:#7c5cfc;color:#ffffff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div>
+                            <h4 style="font-size:0.95rem;font-weight:800;color:#5b21b6;margin:0 0 2px 0;">AI Scan Diagnostic</h4>
+                            <p style="font-size:0.8rem;color:#6b21a8;margin:0;">Assisted radiological reviews</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('braintumor') }}" style="color:#7c5cfc;font-size:1.2rem;" title="Review Scans"><i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+
+            <!-- Appointments Table -->
+            <div class="dash-section">
+                <div class="dash-section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                    <div>
+                        <h3 style="font-size:1.25rem;font-weight:800;color:#0f172a;margin:0 0 4px 0;">
+                            <i class="fas fa-list-check" style="color:#0066ff;margin-right:8px;"></i> Today's Patient Queue
+                        </h3>
+                        <p style="font-size:0.85rem;color:#64748b;margin:0;">All consultations scheduled for {{ doctor.type_of_doctor or 'your department' }}</p>
+                    </div>
+                    <a href="{{ url_for('doctor_patients') }}" class="btn btn-outline" style="padding:7px 16px;font-size:0.85rem;font-weight:700;">
+                        <i class="fas fa-users"></i> Full Patient Directory
+                    </a>
+                </div>
+
+                {% if appointments %}
+                <div class="appt-table-wrap">
+                    <table class="appt-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Patient Name</th>
+                                <th>Age / Blood Group</th>
+                                <th>Time Slot</th>
+                                <th>Contact Information</th>
+                                <th>Consultation Status</th>
+                                <th style="text-align:right;">Clinical Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in appointments %}
+                            <tr>
+                                <td style="font-weight:700;color:#94a3b8;">{{ loop.index }}</td>
+                                <td>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <div style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;color:#334155;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;">
+                                            {{ appt.name[0]|upper }}
+                                        </div>
+                                        <div>
+                                            <span class="name" style="font-weight:800;color:#0f172a;display:block;">{{ appt.name }}</span>
+                                            <span style="font-size:0.75rem;color:#64748b;">Patient ID: #{{ appt._id[:6] }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-weight:700;color:#334155;">{{ appt.age }} yrs</span>
+                                    <span style="display:inline-block;margin-left:6px;padding:2px 6px;border-radius:4px;background:#fee2e2;color:#dc2626;font-size:0.75rem;font-weight:800;">{{ appt.blood_group }}</span>
+                                </td>
+                                <td>
+                                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.86rem;color:#0f172a;font-weight:600;">
+                                        <i class="fas fa-clock" style="color:#0066ff;font-size:0.8rem;"></i> {{ appt.time_slot }}
+                                    </span>
+                                </td>
+                                <td style="font-size:0.8rem;">
+                                    <div style="color:#334155;font-weight:600;"><i class="fas fa-phone" style="font-size:0.72rem;color:#94a3b8;"></i> {{ appt.phone_number }}</div>
+                                    <div style="color:#64748b;"><i class="fas fa-envelope" style="font-size:0.72rem;color:#94a3b8;"></i> {{ appt.email }}</div>
+                                </td>
+                                <td>
+                                    {% if appt.status == 'Approved' %}
+                                        <span class="badge badge-approved"><i class="fas fa-circle-check"></i> Approved</span>
+                                    {% elif appt.status == 'Pending' %}
+                                        <span class="badge badge-pending"><i class="fas fa-hourglass-half"></i> Pending Review</span>
+                                    {% elif appt.status == 'Prescribed' %}
+                                        <span class="badge badge-prescribed"><i class="fas fa-file-prescription"></i> Prescribed</span>
+                                    {% else %}
+                                        <span class="badge" style="background:#f1f5f9;color:#475569;">{{ appt.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align:right;">
+                                    <div style="display:inline-flex;gap:6px;flex-wrap:nowrap;">
+                                        {% if appt.status == 'Pending' %}
+                                        <a href="{{ url_for('approve_appointment', appointment_id=appt['_id']) }}"
+                                            class="btn-xs btn-approve" style="background:#10b981;color:#fff;font-weight:700;padding:6px 12px;border-radius:8px;text-decoration:none;">
+                                            <i class="fas fa-check"></i> Approve
+                                        </a>
+                                        {% endif %}
+
+                                        {% if appt.status == 'Approved' %}
+                                        <a href="{{ url_for('videocall', appointment_id=appt['_id']) }}"
+                                            class="btn-xs" style="background:linear-gradient(135deg, #0066ff, #0052cc);color:#fff;border-radius:8px;padding:6px 12px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+                                            <i class="fas fa-video"></i> Consult
+                                        </a>
+                                        <a href="{{ url_for('prescribe_medicine', appointment_id=appt['_id']) }}"
+                                            class="btn-xs btn-prescribe" style="background:#7c5cfc;color:#fff;border-radius:8px;padding:6px 12px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+                                            <i class="fas fa-prescription"></i> Prescribe
+                                        </a>
+                                        {% endif %}
+
+                                        {% if appt.status == 'Prescribed' %}
+                                        <a href="{{ url_for('view_prescription', appointment_id=appt['_id']) }}"
+                                            class="btn-xs btn-view" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+                                            <i class="fas fa-file-pdf" style="color:#ef4444;"></i> View PDF
+                                        </a>
+                                        {% endif %}
+
+                                        {% if appt.user_id %}
+                                        <a href="{{ url_for('view_records', patient_id=appt.user_id) }}"
+                                            class="btn-xs" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;text-decoration:none;font-weight:700;" title="View Patient Records Vault">
+                                            <i class="fas fa-folder-open"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="appt-table-wrap">
+                    <div class="empty-state" style="padding:48px 24px;text-align:center;">
+                        <i class="fas fa-calendar-check" style="font-size:3rem;color:#cbd5e1;margin-bottom:14px;display:block;"></i>
+                        <h4 style="font-size:1.1rem;font-weight:800;color:#334155;margin:0 0 6px 0;">No Appointments In Queue</h4>
+                        <p style="color:#94a3b8;font-size:0.9rem;margin:0;">Patients booking appointments in {{ doctor.type_of_doctor or 'your specialty' }} will automatically appear here.</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleNotifications() {
+            const el = document.getElementById('notifDropdown');
+            if (el) {
+                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

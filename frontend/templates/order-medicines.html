@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Medicines & Pharmacy Map — ArogyaX</title>
+    <meta name="description"
+        content="Order authentic medicines from nearby verified medical stores with instant delivery and live pharmacy locator on ArogyaX.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .pharmacy-main {
+            background: var(--bg-base);
+            min-height: 100vh;
+            padding: 24px 32px 60px;
+        }
+
+        .pharmacy-hero {
+            background: linear-gradient(135deg, #072249 0%, #0c3d82 45%, #0f52ab 100%);
+            border-radius: 24px;
+            padding: 32px 36px;
+            color: #ffffff;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 36px rgba(7, 34, 73, 0.25);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pharmacy-hero::after {
+            content: '';
+            position: absolute;
+            right: -30px;
+            top: -30px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .pharmacy-hero h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            color: #ffffff;
+        }
+
+        .pharmacy-hero p {
+            font-size: 0.96rem;
+            opacity: 0.95;
+            margin: 0;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        /* Split Layout: Stores/Catalog (Left) & Map (Right) */
+        .pharmacy-split-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        @media (max-width: 1100px) {
+            .pharmacy-split-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .pharmacy-panel-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .store-item-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1.5px solid #e2e8f0;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .store-item-card:hover {
+            border-color: #0066ff;
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 102, 255, 0.1);
+        }
+
+        .store-item-card.selected {
+            border-color: #0066ff;
+            background: #eff6ff;
+            box-shadow: 0 4px 16px rgba(0, 102, 255, 0.15);
+        }
+
+        .store-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 2px 0;
+        }
+
+        .store-dist {
+            font-size: 0.82rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .store-hours {
+            font-size: 0.78rem;
+            color: #059669;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Medicine Item */
+        .med-row-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .med-row-card:hover {
+            background: #ffffff;
+            border-color: #bfdbfe;
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.08);
+        }
+
+        /* Interactive Map Canvas */
+        .map-interactive-view {
+            background: #e2e8f0;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            min-height: 520px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+
+        .map-pin {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .map-pin:hover {
+            transform: scale(1.15) translateY(-6px);
+            z-index: 50;
+        }
+
+        .pin-bubble {
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            margin-bottom: 4px;
+        }
+
+        .pin-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #0066ff;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            border: 3px solid #ffffff;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .pin-icon.user {
+            background: #10b981;
+            animation: userPulse 2s infinite;
+        }
+
+        @keyframes userPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 16px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        /* Floating Cart Sticky Bar */
+        .cart-bar-fixed {
+            position: fixed;
+            bottom: 24px;
+            right: 32px;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 14px 24px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+            z-index: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .cart-bar-fixed:hover {
+            transform: translateY(-2px);
+            background: #0066ff;
+            box-shadow: 0 16px 40px rgba(0, 102, 255, 0.4);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content-card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalPop {
+            0% {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 5-Step Order Progress */
+        .track-step-bar {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 28px 0;
+        }
+
+        .track-step-bar::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+
+        .step-node {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.95rem;
+            border: 3px solid #cbd5e1;
+        }
+
+        .step-node.completed .step-circle {
+            background: #10b981;
+            border-color: #10b981;
+            color: #ffffff;
+        }
+
+        .step-node.active .step-circle {
+            background: #0066ff;
+            border-color: #0066ff;
+            color: #ffffff;
+            box-shadow: 0 0 0 5px rgba(0, 102, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        {% include 'partials/patient_sidebar.html' %}
+
+        <!-- Main Workspace (Fully Offset for Sidebar) -->
+        <main class="dashboard-main pharmacy-main">
+            <!-- Top Navigation & Search -->
+            <div class="top-nav-bar"
+                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px;">
+                <div style="position:relative;width:100%;max-width:440px;">
+                    <i class="fas fa-search"
+                        style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;"></i>
+                    <input type="text" id="medSearch"
+                        placeholder="Search medicines, antibiotics, vitamins, pain relief..." onkeyup="filterMeds()"
+                        style="width:100%;padding:12px 14px 12px 42px;border-radius:12px;border:1.5px solid #e2e8f0;background:#ffffff;font-size:0.92rem;font-family:inherit;color:#1e293b;box-sizing:border-box;">
+                </div>
+
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button class="btn btn-primary"
+                        onclick="document.getElementById('uploadRxModal').classList.add('active')"
+                        style="padding:10px 18px;font-size:0.88rem;font-weight:800;border-radius:12px;">
+                        <i class="fas fa-file-prescription"></i> Upload Prescription
+                    </button>
+                    <div class="user-profile-pill"
+                        style="display:flex;align-items:center;gap:10px;background:#ffffff;border:1px solid #e2e8f0;padding:6px 14px;border-radius:14px;">
+                        <div
+                            style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg, #072249, #0c3d82);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;">
+                            {{ username[0]|upper if username else 'P' }}
+                        </div>
+                        <span style="font-weight:700;font-size:0.9rem;color:#0f172a;">{{ username or 'Patient' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Hero Banner -->
+            <div class="pharmacy-hero">
+                <div>
+                    <div
+                        style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:999px;font-size:0.8rem;font-weight:700;margin-bottom:10px;">
+                        <i class="fas fa-truck-fast"></i> Express 45-Minute Pharmacy Delivery
+                    </div>
+                    <h1>Order Medicines & Healthcare Essentials</h1>
+                    <p>Get authentic medicines and medical supplies delivered from licensed partner pharmacies directly
+                        to your doorstep.</p>
+                </div>
+                <div style="font-size:3.5rem;opacity:0.3;margin-right:1rem;">
+                    <i class="fas fa-prescription-bottle-medical"></i>
+                </div>
+            </div>
+
+            <!-- Main Layout: Partner Pharmacies & Map -->
+            <div class="pharmacy-split-grid">
+                <!-- Left Column: Stores & Medicine Catalog -->
+                <div>
+                    <h3
+                        style="font-size:1.25rem;font-weight:800;color:#0f172a;margin:0 0 14px 0;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-store" style="color:#0066ff;"></i> Nearby Partner Medical Stores
+                    </h3>
+
+                    <!-- Store 1: Apollo Pharmacy -->
+                    <div class="store-item-card selected" onclick="selectStore('Apollo Pharmacy', '0.8 km', 4.8, this)">
+                        <div>
+                            <h4 class="store-title">Apollo Pharmacy</h4>
+                            <div class="store-dist"><i class="fas fa-map-pin" style="color:#ef4444;"></i> Main Market •
+                                <strong>0.8 km away</strong></div>
+                            <div class="store-hours"><i class="fas fa-clock"></i> Open Now (8:00 AM - 11:00 PM)</div>
+                        </div>
+                        <span
+                            style="background:#fef3c7;color:#b45309;font-weight:800;font-size:0.85rem;padding:4px 8px;border-radius:8px;">
+                            ⭐ 4.8 (320)
+                        </span>
+                    </div>
+
+                    <!-- Store 2: MedPlus -->
+                    <div class="store-item-card" onclick="selectStore('MedPlus Health Mart', '1.2 km', 4.7, this)">
+                        <div>
+                            <h4 class="store-title">MedPlus Health Mart</h4>
+                            <div class="store-dist"><i class="fas fa-map-pin" style="color:#ef4444;"></i> Sector 4 Plaza
+                                • <strong>1.2 km away</strong></div>
+                            <div class="store-hours"><i class="fas fa-clock"></i> Open 24x7</div>
+                        </div>
+                        <span
+                            style="background:#fef3c7;color:#b45309;font-weight:800;font-size:0.85rem;padding:4px 8px;border-radius:8px;">
+                            ⭐ 4.7 (210)
+                        </span>
+                    </div>
+
+                    <!-- Store 3: Netmeds Local -->
+                    <div class="store-item-card" onclick="selectStore('Netmeds Local Hub', '1.5 km', 4.2, this)">
+                        <div>
+                            <h4 class="store-title">Netmeds Local Hub</h4>
+                            <div class="store-dist"><i class="fas fa-map-pin" style="color:#ef4444;"></i> Ring Road
+                                Avenue • <strong>1.5 km away</strong></div>
+                            <div class="store-hours"><i class="fas fa-clock"></i> Open Now (8:30 AM - 10:30 PM)</div>
+                        </div>
+                        <span
+                            style="background:#fef3c7;color:#b45309;font-weight:800;font-size:0.85rem;padding:4px 8px;border-radius:8px;">
+                            ⭐ 4.2 (190)
+                        </span>
+                    </div>
+
+                    <!-- Store 4: Wellness Pharmacy -->
+                    <div class="store-item-card"
+                        onclick="selectStore('Wellness Pharmacy & Surgicals', '2.1 km', 4.1, this)">
+                        <div>
+                            <h4 class="store-title">Wellness Pharmacy & Surgicals</h4>
+                            <div class="store-dist"><i class="fas fa-map-pin" style="color:#ef4444;"></i> Civil Lines
+                                Circle • <strong>2.1 km away</strong></div>
+                            <div class="store-hours"><i class="fas fa-clock"></i> Open Now (9:00 AM - 10:00 PM)</div>
+                        </div>
+                        <span
+                            style="background:#fef3c7;color:#b45309;font-weight:800;font-size:0.85rem;padding:4px 8px;border-radius:8px;">
+                            ⭐ 4.1 (160)
+                        </span>
+                    </div>
+
+                    <!-- Medicines Catalog -->
+                    <h3
+                        style="font-size:1.2rem;font-weight:800;color:#0f172a;margin:24px 0 14px 0;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-capsules" style="color:#00bfa6;"></i> Available Medicines at <span
+                            id="currentStoreLabel" style="color:#0066ff;">Apollo Pharmacy</span>
+                    </h3>
+
+                    <div id="medListContainer">
+                        <div class="med-row-card">
+                            <div>
+                                <strong style="font-size:0.95rem;color:#0f172a;">Paracetamol 650mg (Dolo)</strong>
+                                <div style="font-size:0.8rem;color:#64748b;">Strip of 15 Tablets • Fever & Pain Relief
+                                </div>
+                                <span
+                                    style="font-size:0.75rem;background:#ecfdf5;color:#059669;padding:2px 8px;border-radius:4px;font-weight:700;">No
+                                    Rx Required</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <strong style="font-size:1.15rem;color:#0f172a;">₹32</strong>
+                                <button class="btn btn-primary" onclick="addToCart('Paracetamol 650mg', 32, false)"
+                                    style="padding:6px 14px;font-size:0.82rem;font-weight:700;border-radius:8px;">+
+                                    Add</button>
+                            </div>
+                        </div>
+
+                        <div class="med-row-card">
+                            <div>
+                                <strong style="font-size:0.95rem;color:#0f172a;">Amoxicillin 500mg (Antibiotic)</strong>
+                                <div style="font-size:0.8rem;color:#64748b;">Strip of 10 Capsules • Bacterial Care</div>
+                                <span
+                                    style="font-size:0.75rem;background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:4px;font-weight:700;">Rx
+                                    Required</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <strong style="font-size:1.15rem;color:#0f172a;">₹118</strong>
+                                <button class="btn btn-primary" onclick="addToCart('Amoxicillin 500mg', 118, true)"
+                                    style="padding:6px 14px;font-size:0.82rem;font-weight:700;border-radius:8px;">+
+                                    Add</button>
+                            </div>
+                        </div>
+
+                        <div class="med-row-card">
+                            <div>
+                                <strong style="font-size:0.95rem;color:#0f172a;">Vitamin C & Zinc Chews
+                                    (Limcee)</strong>
+                                <div style="font-size:0.8rem;color:#64748b;">Pack of 30 Chewable Tablets • Immunity
+                                </div>
+                                <span
+                                    style="font-size:0.75rem;background:#ecfdf5;color:#059669;padding:2px 8px;border-radius:4px;font-weight:700;">No
+                                    Rx Required</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <strong style="font-size:1.15rem;color:#0f172a;">₹75</strong>
+                                <button class="btn btn-primary" onclick="addToCart('Vitamin C & Zinc', 75, false)"
+                                    style="padding:6px 14px;font-size:0.82rem;font-weight:700;border-radius:8px;">+
+                                    Add</button>
+                            </div>
+                        </div>
+
+                        <div class="med-row-card">
+                            <div>
+                                <strong style="font-size:0.95rem;color:#0f172a;">Omeprazole 20mg (Antacid)</strong>
+                                <div style="font-size:0.8rem;color:#64748b;">Strip of 15 Capsules • Acidity & Reflux
+                                </div>
+                                <span
+                                    style="font-size:0.75rem;background:#ecfdf5;color:#059669;padding:2px 8px;border-radius:4px;font-weight:700;">No
+                                    Rx Required</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <strong style="font-size:1.15rem;color:#0f172a;">₹65</strong>
+                                <button class="btn btn-primary" onclick="addToCart('Omeprazole 20mg', 65, false)"
+                                    style="padding:6px 14px;font-size:0.82rem;font-weight:700;border-radius:8px;">+
+                                    Add</button>
+                            </div>
+                        </div>
+
+                        <div class="med-row-card">
+                            <div>
+                                <strong style="font-size:0.95rem;color:#0f172a;">Cetirizine 10mg (Anti-Allergy)</strong>
+                                <div style="font-size:0.8rem;color:#64748b;">Strip of 10 Tablets • Cold & Allergy</div>
+                                <span
+                                    style="font-size:0.75rem;background:#ecfdf5;color:#059669;padding:2px 8px;border-radius:4px;font-weight:700;">No
+                                    Rx Required</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <strong style="font-size:1.15rem;color:#0f172a;">₹28</strong>
+                                <button class="btn btn-primary" onclick="addToCart('Cetirizine 10mg', 28, false)"
+                                    style="padding:6px 14px;font-size:0.82rem;font-weight:700;border-radius:8px;">+
+                                    Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Pharmacy Map -->
+                <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                        <h3
+                            style="font-size:1.25rem;font-weight:800;color:#0f172a;margin:0;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-map-location-dot" style="color:#0066ff;"></i> Live Medical Store Map
+                        </h3>
+                        <span
+                            style="font-size:0.8rem;background:#dbeafe;color:#1d4ed8;font-weight:800;padding:4px 12px;border-radius:999px;">
+                            <i class="fas fa-crosshairs"></i> GPS Active
+                        </span>
+                    </div>
+
+                    <div class="map-interactive-view">
+                        <!-- Simulated Road Grids -->
+                        <div
+                            style="position:absolute;width:100%;height:4px;top:45%;background:#cbd5e1;transform:rotate(-5deg);">
+                        </div>
+                        <div
+                            style="position:absolute;height:100%;width:4px;left:48%;background:#cbd5e1;transform:rotate(8deg);">
+                        </div>
+                        <div
+                            style="position:absolute;width:75%;height:4px;top:25%;left:10%;background:#cbd5e1;transform:rotate(12deg);">
+                        </div>
+
+                        <!-- User Pin -->
+                        <div class="map-pin" style="top:42%;left:45%;">
+                            <div class="pin-bubble" style="background:#10b981;">📍 You Are Here</div>
+                            <div class="pin-icon user"><i class="fas fa-user"></i></div>
+                        </div>
+
+                        <!-- Apollo Pin -->
+                        <div class="map-pin" style="top:22%;left:65%;"
+                            onclick="selectStore('Apollo Pharmacy', '0.8 km', 4.8, document.querySelectorAll('.store-item-card')[0])">
+                            <div class="pin-bubble">Apollo Pharmacy (0.8 km)</div>
+                            <div class="pin-icon"><i class="fas fa-store"></i></div>
+                        </div>
+
+                        <!-- MedPlus Pin -->
+                        <div class="map-pin" style="top:68%;left:28%;"
+                            onclick="selectStore('MedPlus Health Mart', '1.2 km', 4.7, document.querySelectorAll('.store-item-card')[1])">
+                            <div class="pin-bubble">MedPlus (1.2 km)</div>
+                            <div class="pin-icon" style="background:#0d9488;"><i class="fas fa-store"></i></div>
+                        </div>
+
+                        <!-- Netmeds Pin -->
+                        <div class="map-pin" style="top:30%;left:18%;"
+                            onclick="selectStore('Netmeds Local Hub', '1.5 km', 4.2, document.querySelectorAll('.store-item-card')[2])">
+                            <div class="pin-bubble">Netmeds (1.5 km)</div>
+                            <div class="pin-icon" style="background:#0066ff;"><i class="fas fa-store"></i></div>
+                        </div>
+
+                        <!-- Wellness Pin -->
+                        <div class="map-pin" style="top:75%;left:75%;"
+                            onclick="selectStore('Wellness Pharmacy & Surgicals', '2.1 km', 4.1, document.querySelectorAll('.store-item-card')[3])">
+                            <div class="pin-bubble">Wellness (2.1 km)</div>
+                            <div class="pin-icon" style="background:#7c5cfc;"><i class="fas fa-store"></i></div>
+                        </div>
+
+                        <!-- Map Selected Store Bottom Card -->
+                        <div
+                            style="position:absolute;bottom:20px;left:20px;right:20px;background:#ffffff;border-radius:16px;padding:16px 20px;box-shadow:0 8px 30px rgba(0,0,0,0.12);display:flex;justify-content:space-between;align-items:center;border:1px solid #e2e8f0;">
+                            <div>
+                                <div style="font-size:0.75rem;font-weight:800;color:#0d9488;text-transform:uppercase;">
+                                    Selected Pharmacy</div>
+                                <h4 id="mapSelectedStore"
+                                    style="font-size:1.15rem;font-weight:800;color:#0f172a;margin:2px 0;">Apollo
+                                    Pharmacy</h4>
+                                <div style="font-size:0.82rem;color:#64748b;">Delivery in <strong>35 - 45 mins</strong>
+                                    • ₹29 Delivery Fee</div>
+                            </div>
+                            <button class="btn btn-primary" onclick="openCartModal()"
+                                style="padding:10px 18px;font-weight:800;border-radius:12px;font-size:0.88rem;">
+                                View Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Sticky Cart Button -->
+    <div class="cart-bar-fixed" id="floatingCart" onclick="openCartModal()" style="display:none;">
+        <i class="fas fa-shopping-bag" style="font-size:1.3rem;color:#38bdf8;"></i>
+        <div>
+            <div style="font-size:0.78rem;opacity:0.85;"><span id="cartCount">0</span> Items in Cart</div>
+            <strong style="font-size:1.1rem;" id="cartTotal">₹0</strong>
+        </div>
+        <i class="fas fa-arrow-right"></i>
+    </div>
+
+    <!-- CART & CHECKOUT MODAL -->
+    <div class="modal-overlay" id="cartModal">
+        <div class="modal-content-card">
+            <i class="fas fa-times" onclick="document.getElementById('cartModal').classList.remove('active')"
+                style="position:absolute;top:20px;right:20px;font-size:1.2rem;color:#94a3b8;cursor:pointer;"></i>
+            <h2 style="font-size:1.35rem;font-weight:800;color:#0f172a;margin:0 0 16px 0;"><i
+                    class="fas fa-shopping-cart" style="color:#0066ff;"></i> Review Medicine Cart</h2>
+
+            <div id="cartItemsList" style="margin-bottom:20px;max-height:220px;overflow-y:auto;"></div>
+
+            <div style="border-top:1px solid #e2e8f0;padding-top:14px;margin-bottom:20px;">
+                <div
+                    style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.88rem;color:#475569;">
+                    <span>Item Subtotal</span>
+                    <span id="cartSubtotalText" style="font-weight:700;color:#0f172a;">₹0</span>
+                </div>
+                <div
+                    style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.88rem;color:#475569;">
+                    <span>Express Pharmacy Delivery (45 mins)</span>
+                    <span style="color:#059669;font-weight:700;">₹29</span>
+                </div>
+                <div
+                    style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;font-size:1.2rem;font-weight:800;color:#0f172a;">
+                    <span>Total Payable</span>
+                    <span id="cartFinalTotalText" style="color:#0066ff;">₹0</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="placeMedicineOrder()"
+                style="width:100%;padding:14px;font-size:1rem;border-radius:12px;font-weight:800;justify-content:center;">
+                <i class="fas fa-circle-check"></i> Confirm & Place Order
+            </button>
+        </div>
+    </div>
+
+    <!-- 5-STAGE LIVE ORDER TRACKING MODAL -->
+    <div class="modal-overlay" id="trackingModal">
+        <div class="modal-content-card" style="max-width: 620px;">
+            <i class="fas fa-times" onclick="document.getElementById('trackingModal').classList.remove('active')"
+                style="position:absolute;top:20px;right:20px;font-size:1.2rem;color:#94a3b8;cursor:pointer;"></i>
+
+            <div style="text-align:center;margin-bottom:20px;">
+                <div
+                    style="width:64px;height:64px;border-radius:50%;background:#ecfdf5;color:#059669;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 10px auto;">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0 0 4px 0;">Order Confirmed!</h2>
+                <p style="color:#64748b;font-size:0.88rem;margin:0;">Order ID: <strong id="trackOrderId"
+                        style="color:#0f172a;">ARX-98231</strong> • Pharmacy: <span id="trackStoreName">Apollo
+                        Pharmacy</span></p>
+            </div>
+
+            <!-- 5 Steps Indicator -->
+            <div class="track-step-bar">
+                <div class="step-node completed">
+                    <div class="step-circle"><i class="fas fa-check"></i></div>
+                    <span style="font-size:0.75rem;font-weight:800;color:#0f172a;">Placed</span>
+                </div>
+                <div class="step-node active">
+                    <div class="step-circle"><i class="fas fa-store"></i></div>
+                    <span style="font-size:0.75rem;font-weight:800;color:#0066ff;">Confirmed</span>
+                </div>
+                <div class="step-node">
+                    <div class="step-circle"><i class="fas fa-box"></i></div>
+                    <span style="font-size:0.75rem;color:#94a3b8;">Preparing</span>
+                </div>
+                <div class="step-node">
+                    <div class="step-circle"><i class="fas fa-motorcycle"></i></div>
+                    <span style="font-size:0.75rem;color:#94a3b8;">On the Way</span>
+                </div>
+                <div class="step-node">
+                    <div class="step-circle"><i class="fas fa-home"></i></div>
+                    <span style="font-size:0.75rem;color:#94a3b8;">Delivered</span>
+                </div>
+            </div>
+
+            <div
+                style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <strong style="color:#0f172a;font-size:0.95rem;"><i class="fas fa-motorcycle"
+                            style="color:#0d9488;"></i> Delivery Executive Assigned</strong>
+                    <div style="color:#64748b;font-size:0.82rem;margin-top:2px;">Ramesh Kumar is picking up medicines
+                        from pharmacy.</div>
+                </div>
+                <span
+                    style="font-size:0.85rem;font-weight:800;color:#059669;background:#ecfdf5;padding:4px 12px;border-radius:999px;">
+                    ETA: 35 Mins
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Prescription Modal -->
+    <div class="modal-overlay" id="uploadRxModal">
+        <div class="modal-content-card">
+            <i class="fas fa-times" onclick="document.getElementById('uploadRxModal').classList.remove('active')"
+                style="position:absolute;top:20px;right:20px;font-size:1.2rem;color:#94a3b8;cursor:pointer;"></i>
+            <h2 style="font-size:1.35rem;font-weight:800;color:#0f172a;margin:0 0 8px 0;"><i
+                    class="fas fa-file-prescription" style="color:#0066ff;"></i> Upload Doctor Prescription</h2>
+            <p style="color:#64748b;font-size:0.88rem;margin:0 0 20px 0;">Our licensed pharmacist will review your
+                prescription and prepare the exact prescribed dosage.</p>
+
+            <div style="border:2px dashed #cbd5e1;border-radius:16px;padding:28px 20px;text-align:center;background:#f8fafc;margin-bottom:20px;cursor:pointer;"
+                onclick="document.getElementById('rxFileInput').click()">
+                <i class="fas fa-cloud-arrow-up" style="font-size:2.8rem;color:#0066ff;margin-bottom:10px;"></i>
+                <div style="font-weight:800;color:#0f172a;font-size:0.95rem;">Click or Drag Prescription Image / PDF
+                </div>
+                <div style="font-size:0.8rem;color:#94a3b8;margin-top:4px;">Supports PNG, JPG, PDF up to 5MB</div>
+                <input type="file" id="rxFileInput" style="display:none;"
+                    onchange="alert('Prescription attached: ' + this.files[0].name)">
+            </div>
+
+            <button class="btn btn-primary"
+                onclick="document.getElementById('uploadRxModal').classList.remove('active'); alert('Prescription uploaded successfully! Partner pharmacy will verify.')"
+                style="width:100%;padding:12px;border-radius:12px;font-weight:800;justify-content:center;">
+                Submit Prescription
+            </button>
+        </div>
+    </div>
+
+    <!-- Client-side Cart & Order Logic -->
+    <script>
+        let currentStore = 'Apollo Pharmacy';
+        let cart = [];
+
+        function selectStore(name, dist, rating, cardEl) {
+            currentStore = name;
+            document.querySelectorAll('.store-item-card').forEach(c => c.classList.remove('selected'));
+            if (cardEl) cardEl.classList.add('selected');
+            document.getElementById('currentStoreLabel').textContent = name;
+            document.getElementById('mapSelectedStore').textContent = name;
+        }
+
+        function addToCart(name, price, isRx) {
+            cart.push({ name, price, isRx, store: currentStore });
+            updateCartUI();
+
+            const banner = document.getElementById('floatingCart');
+            banner.style.display = 'flex';
+        }
+
+        function updateCartUI() {
+            document.getElementById('cartCount').textContent = cart.length;
+            const subtotal = cart.reduce((acc, item) => acc + item.price, 0);
+            document.getElementById('cartTotal').textContent = '₹' + (subtotal + (subtotal > 0 ? 29 : 0));
+        }
+
+        function openCartModal() {
+            if (cart.length === 0) {
+                alert('Your medicine cart is empty. Add medicines from the catalog first!');
+                return;
+            }
+            const listEl = document.getElementById('cartItemsList');
+            listEl.innerHTML = '';
+            let subtotal = 0;
+
+            cart.forEach((item, index) => {
+                subtotal += item.price;
+                const row = document.createElement('div');
+                row.style = "display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9;";
+                row.innerHTML = `
+                    <div>
+                        <div style="font-weight:800; color:#0f172a; font-size:0.95rem;">${item.name}</div>
+                        <div style="font-size:0.78rem; color:#64748b;">${item.store} ${item.isRx ? '<span style="color:#ef4444; font-weight:700;">(Rx Attached)</span>' : ''}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <strong style="color:#0f172a; font-size:1rem;">₹${item.price}</strong>
+                        <button onclick="removeItem(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.95rem;"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+
+            document.getElementById('cartSubtotalText').textContent = '₹' + subtotal;
+            document.getElementById('cartFinalTotalText').textContent = '₹' + (subtotal + 29);
+            document.getElementById('cartModal').classList.add('active');
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            if (cart.length === 0) {
+                document.getElementById('cartModal').classList.remove('active');
+                document.getElementById('floatingCart').style.display = 'none';
+            } else {
+                openCartModal();
+            }
+            updateCartUI();
+        }
+
+        function placeMedicineOrder() {
+            document.getElementById('cartModal').classList.remove('active');
+            document.getElementById('trackStoreName').textContent = currentStore;
+            document.getElementById('trackOrderId').textContent = 'ARX-' + Math.floor(10000 + Math.random() * 90000);
+            document.getElementById('trackingModal').classList.add('active');
+            cart = [];
+            updateCartUI();
+            document.getElementById('floatingCart').style.display = 'none';
+        }
+
+        function filterMeds() {
+            const query = (document.getElementById('medSearch').value || '').toLowerCase().trim();
+            document.querySelectorAll('.med-row-card').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+    </script>
+</body>
+
+</html>
