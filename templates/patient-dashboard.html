@@ -1,3 +1,9 @@
+{% set patient = user %}
+{% set user_records = user.get('records', []) if user else [] %}
+{% set approved_appts = user_appointments | selectattr('status', 'equalto', 'Approved') | list %}
+{% set pending_appts = user_appointments | selectattr('status', 'equalto', 'Pending') | list %}
+{% set prescribed_appts = user_appointments | selectattr('status', 'equalto', 'Prescribed') | list %}
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,190 +14,985 @@
     <link rel="icon" href="../static/images/arogyax_logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../static/css/style.css">
+    <style>
+        /* Healthcare Promo Ribbon (Doctor Banner) */
+        .healthcare-promo-ribbon {
+            background: linear-gradient(90deg, #e4f2fd 0%, #def0fe 40%, #e8f5fe 70%, #edf7ff 100%);
+            border: 1.5px solid #bae6fd;
+            border-radius: 18px;
+            padding: 12px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 18px rgba(2, 132, 199, 0.07);
+            margin-bottom: 1.1rem;
+            min-height: 104px;
+        }
+
+        .promo-plus-bg {
+            position: absolute;
+            left: 31%;
+            top: 14%;
+            color: #bae6fd;
+            font-size: 2.3rem;
+            font-weight: 900;
+            opacity: 0.7;
+            pointer-events: none;
+            user-select: none;
+            line-height: 1;
+            z-index: 1;
+        }
+
+        .promo-left-col {
+            position: relative;
+            z-index: 2;
+        }
+
+        .promo-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #034b7f;
+            line-height: 1.22;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.2px;
+        }
+
+        .promo-sub-tags {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: #475569;
+            letter-spacing: 0.2px;
+        }
+
+        .promo-sub-tags .sep {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .promo-center-doctor {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .doctor-photo-wrap {
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            border: 3.5px solid #ffffff;
+            box-shadow: 0 0 0 4px rgba(224, 242, 254, 0.95), 0 6px 16px rgba(2, 132, 199, 0.18);
+            overflow: hidden;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .promo-doc-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: 50% 12%;
+            display: block;
+        }
+
+        .promo-right-col {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            text-align: right;
+        }
+
+        .promo-quote-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .promo-quote-text {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: #034b7f;
+            line-height: 1.25;
+            letter-spacing: -0.2px;
+            text-align: right;
+        }
+
+        .promo-accent-bar {
+            width: 44px;
+            height: 3.5px;
+            background: #0284c7;
+            border-radius: 2px;
+            margin-top: 3px;
+            margin-bottom: 5px;
+        }
+
+        .promo-happiness-tag {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 2px;
+        }
+
+        .promo-heart-icon {
+            color: #0284c7;
+            font-size: 0.85rem;
+        }
+
+        .happiness-script {
+            font-family: 'Caveat', 'Segoe Script', cursive, sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0284c7;
+            line-height: 1.15;
+            text-align: right;
+        }
+
+        .happiness-script span {
+            font-family: 'Plus Jakarta Sans', 'Segoe UI Emoji', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 900px) {
+            .healthcare-promo-ribbon {
+                padding: 12px 20px;
+            }
+            .promo-plus-bg {
+                display: none;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .healthcare-promo-ribbon {
+                flex-direction: column;
+                text-align: center;
+                gap: 14px;
+                padding: 16px 20px;
+            }
+            .promo-right-col {
+                align-items: center;
+                text-align: center;
+            }
+            .promo-quote-box {
+                align-items: center;
+            }
+            .promo-quote-text {
+                text-align: center;
+            }
+            .promo-accent-bar {
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .happiness-script {
+                text-align: center;
+            }
+        }
+
+        .dashboard-main {
+            background: var(--bg-base);
+            padding-bottom: 4rem;
+            min-height: 100vh;
+        }
+
+        .hero-health-banner {
+            background: linear-gradient(135deg, #072249 0%, #0c3d82 45%, #0f52ab 100%) !important;
+            box-shadow: 0 12px 30px rgba(7, 34, 73, 0.35) !important;
+        }
+
+        /* Interactive Top Bar */
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-search-bar {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            padding: 0.5rem 1.2rem;
+            width: 380px;
+            gap: 0.75rem;
+            transition: var(--transition);
+        }
+
+        .header-search-bar:focus-within {
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+        }
+
+        .header-search-bar input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .header-right-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .role-badge-pill {
+            background: #e0f2fe;
+            color: #0369a1;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.4rem 0.9rem;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* Stats Grid 5 Cards */
+        .stats-colorful-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-glow-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            padding: 1.4rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-glow-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-glow-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-glow-card.blue::before {
+            background: #0066ff;
+        }
+
+        .stat-glow-card.cyan::before {
+            background: #00bfa6;
+        }
+
+        .stat-glow-card.amber::before {
+            background: #f59e0b;
+        }
+
+        .stat-glow-card.coral::before {
+            background: #ef4444;
+        }
+
+        .stat-glow-card.purple::before {
+            background: #7c5cfc;
+        }
+
+        .stat-glow-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .stat-glow-icon.blue {
+            background: #e0f2fe;
+            color: #0066ff;
+        }
+
+        .stat-glow-icon.cyan {
+            background: #ccfbf1;
+            color: #0f766e;
+        }
+
+        .stat-glow-icon.amber {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .stat-glow-icon.coral {
+            background: #ffe4e6;
+            color: #e11d48;
+        }
+
+        .stat-glow-icon.purple {
+            background: #f3e8ff;
+            color: #7c5cfc;
+        }
+
+        .stat-val-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+
+        .stat-lbl-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .stat-trend {
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-trend.green {
+            color: #16a34a;
+        }
+
+        .stat-trend.amber {
+            color: #d97706;
+        }
+
+        .stat-trend.blue {
+            color: #0284c7;
+        }
+
+        /* Quick Actions Bar */
+        .quick-actions-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2.2rem;
+        }
+
+        .qa-card-btn {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.2rem 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+
+        .qa-card-btn:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 18px rgba(0, 102, 255, 0.12);
+            color: var(--primary);
+        }
+
+        .qa-card-btn i {
+            font-size: 1.6rem;
+        }
+
+        /* Health Tips Card */
+        .health-tips-carousel {
+            background: linear-gradient(135deg, #f0fdf4, #ecfeff);
+            border: 1px solid #bbf7d0;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+        }
+
+        /* Details Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-card-box {
+            background: white;
+            border-radius: var(--radius-xl);
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 
 <body>
     <div class="dashboard-layout">
-
         {% include 'partials/patient_sidebar.html' %}
 
-        <!-- MAIN -->
         <main class="dashboard-main">
-            <div class="dash-header">
-                <div>
-                    <h1>Patient Dashboard</h1>
-                    <p>Welcome back, <strong>{{ username }}</strong> — here's your health overview</p>
+            <!-- TOP NAVBAR -->
+            <header class="dashboard-header">
+                <div class="header-search-bar">
+                    <i class="fas fa-search" style="color:var(--text-muted);"></i>
+                    <input type="text" id="dashboardSearchInput" placeholder="Search doctors, scans, health records...">
                 </div>
-                <a href="{{url_for('book_appointment')}}" class="btn btn-primary"><i class="fas fa-plus"></i> New
-                    Appointment</a>
-            </div>
 
-            <!-- WELCOME BANNER -->
-            <div class="welcome-banner">
-                <div class="text">
-                    <h2>Good to see you, {{ username }}! 👋</h2>
-                    <p>Manage your appointments, predict diseases, and connect with doctors all in one place.</p>
-                </div>
-                <i class="fas fa-hand-holding-heart icon-big"></i>
-            </div>
+                <div class="header-right-nav">
+                    <span class="role-badge-pill"><i class="fas fa-user-check"></i> Patient Mode</span>
 
-            <!-- STATS -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div>
-                        <div class="label">Total Appointments</div>
-                        <div class="value">{{ user_appointments|length }}</div>
-                    </div>
-                    <div class="icon-wrap ic-orange"><i class="fas fa-calendar-check"></i></div>
-                </div>
-                <div class="stat-card">
-                    <div>
-                        <div class="label">Approved</div>
-                        <div class="value">{{ user_appointments|selectattr('status','equalto','Approved')|list|length }}
+                    <!-- Notification Bell -->
+                    <div style="position:relative;">
+                        <div class="notification-bell" onclick="toggleNotifications()">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">3</span>
+                        </div>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                                <strong style="color:var(--text-primary); font-size:0.95rem;">Notifications</strong>
+                                <span style="font-size:0.75rem; color:var(--primary); cursor:pointer;">Mark all
+                                    read</span>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notif-icon" style="background:#e0f2fe; color:#0284c7;"><i
+                                        class="fas fa-calendar-check"></i></div>
+                                <div>
+                                    <div style="font-size:0.85rem; font-weight:700; color:var(--text-primary);">
+                                        Appointment Confirmed</div>
+                                    <div style="font-size:0.75rem; color:var(--text-secondary);">Your consultation with
+                                        Dr. Priya is scheduled.</div>
+                                </div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notif-icon" style="background:#ccfbf1; color:#0d9488;"><i
+                                        class="fas fa-pills"></i></div>
+                                <div>
+                                    <div style="font-size:0.85rem; font-weight:700; color:var(--text-primary);">
+                                        Prescription Ready</div>
+                                    <div style="font-size:0.75rem; color:var(--text-secondary);">Dr. Sandeep uploaded
+                                        your digital prescription.</div>
+                                </div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notif-icon" style="background:#f3e8ff; color:#7c5cfc;"><i
+                                        class="fas fa-robot"></i></div>
+                                <div>
+                                    <div style="font-size:0.85rem; font-weight:700; color:var(--text-primary);">AI
+                                        Health Insight</div>
+                                    <div style="font-size:0.75rem; color:var(--text-secondary);">Your latest scan report
+                                        shows healthy recovery!</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="icon-wrap ic-green"><i class="fas fa-check-circle"></i></div>
+
+                    <!-- User Pill -->
+                    <div class="user-pill" onclick="location.href='{{url_for('profile')}}'" style="cursor:pointer;">
+                        <div class="avatar" style="background:linear-gradient(135deg, #0066ff, #7c5cfc); color:white;">
+                            {{ username[0]|upper if username else 'P' }}</div>
+                        <span style="font-weight:700;">{{ username }}</span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div>
-                        <div class="label">Pending</div>
-                        <div class="value">{{ user_appointments|selectattr('status','equalto','Pending')|list|length }}
+            </header>
+
+            <div class="page-container" style="padding: 8px 2rem 2rem;">
+
+                <!-- HEALTHCARE PROMO BANNER (Photo 3 Reference) -->
+                <div class="healthcare-promo-ribbon">
+                    <!-- Decorative Soft Plus Watermark -->
+                    <span class="promo-plus-bg"><i class="fas fa-plus"></i></span>
+
+                    <!-- Left: Title & Healthcare Highlights -->
+                    <div class="promo-left-col">
+                        <h2 class="promo-title">Better Healthcare<br>for a Healthier Tomorrow</h2>
+                        <div class="promo-sub-tags">
+                            <span>AI Powered</span>
+                            <span class="sep">|</span>
+                            <span>Trusted Doctors</span>
+                            <span class="sep">|</span>
+                            <span>Accessible Care</span>
                         </div>
                     </div>
-                    <div class="icon-wrap ic-yellow"><i class="fas fa-clock"></i></div>
-                </div>
-                <div class="stat-card">
-                    <div>
-                        <div class="label">Prescribed</div>
-                        <div class="value">{{ user_appointments|selectattr('status','equalto','Prescribed')|list|length
-                            }}</div>
+
+                    <!-- Center: Professional Doctor Photo -->
+                    <div class="promo-center-doctor">
+                        <div class="doctor-photo-wrap">
+                            <img src="{{ url_for('static', filename='images/healthcare_doctor_banner.jpg') }}"
+                                alt="ArogyaX Healthcare Specialist" class="promo-doc-img">
+                        </div>
                     </div>
-                    <div class="icon-wrap ic-blue"><i class="fas fa-file-prescription"></i></div>
-                </div>
-            </div>
 
-            <!-- QUICK ACTIONS -->
-            <div class="dash-section">
-                <div class="dash-section-header">
-                    <h3><i class="fas fa-bolt" style="color:var(--primary);margin-right:8px;"></i>Quick Actions</h3>
+                    <!-- Right: Priority Quote & Cheer -->
+                    <div class="promo-right-col">
+                        <div class="promo-quote-box">
+                            <div class="promo-quote-text">“Your health<br>is our priority”</div>
+                            <div class="promo-accent-bar"></div>
+                        </div>
+                        <div class="promo-happiness-tag">
+                            <i class="fas fa-heart promo-heart-icon"></i>
+                            <div class="happiness-script">Stay Healthy<br><span>Stay Happy 😊</span></div>
+                        </div>
+                    </div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;">
-                    <a href="{{url_for('book_appointment')}}" class="glass-box"
-                        style="text-align:center;padding:1.4rem 1rem;text-decoration:none;">
-                        <i class="fas fa-calendar-plus"
-                            style="font-size:1.8rem;color:var(--primary);margin-bottom:0.7rem;display:block;"></i>
-                        <div style="font-weight:600;font-size:0.875rem;">Book Appointment</div>
-                    </a>
-                    <a href="{{url_for('disease_predict')}}" class="glass-box"
-                        style="text-align:center;padding:1.4rem 1rem;text-decoration:none;">
-                        <i class="fas fa-brain"
-                            style="font-size:1.8rem;color:var(--info);margin-bottom:0.7rem;display:block;"></i>
-                        <div style="font-weight:600;font-size:0.875rem;">Check Symptoms</div>
-                    </a>
 
-                    <a href="{{url_for('braintumor')}}" class="glass-box"
-                        style="text-align:center;padding:1.4rem 1rem;text-decoration:none;">
-                        <i class="fas fa-x-ray"
-                            style="font-size:1.8rem;color:var(--warning);margin-bottom:0.7rem;display:block;"></i>
-                        <div style="font-weight:600;font-size:0.875rem;">Medical Scans</div>
-                    </a>
-                    <a href="{{url_for('vault')}}" class="glass-box"
-                        style="text-align:center;padding:1.4rem 1rem;text-decoration:none; border: 1px solid var(--primary);">
-                        <i class="fas fa-folder-open"
-                            style="font-size:1.8rem;color:var(--primary);margin-bottom:0.7rem;display:block;"></i>
-                        <div style="font-weight:600;font-size:0.875rem;color:var(--primary);">Medical Vault</div>
-                    </a>
-                    <a href="{{url_for('profile')}}" class="glass-box"
-                        style="text-align:center;padding:1.4rem 1rem;text-decoration:none;">
-                        <i class="fas fa-user-circle"
-                            style="font-size:1.8rem;color:var(--primary);margin-bottom:0.7rem;display:block;"></i>
-                        <div style="font-weight:600;font-size:0.875rem;">My Profile</div>
-                    </a>
+                <!-- WELCOME HERO BANNER -->
+                <div class="hero-health-banner">
+                    <div>
+                        <span
+                            style="background:rgba(255,255,255,0.25); font-size:0.8rem; font-weight:700; padding:4px 12px; border-radius:50px; letter-spacing:0.5px; text-transform:uppercase;">ArogyaX
+                            Digital Care</span>
+                        <h1>Good morning, {{ username }} 👋</h1>
+                        <p>Take care of your health today for a better tomorrow. Connect with top specialists, track AI
+                            health scans, and manage prescriptions all in one place.</p>
+
+                        <div style="display:flex; gap:1rem; margin-top:1.2rem; flex-wrap:wrap;">
+                            <a href="{{url_for('videocall_direct')}}" class="btn-banner-action"
+                                style="background:#0f172a; color:white;">
+                                <i class="fas fa-video" style="color:#38bdf8;"></i> Start Video Call
+                            </a>
+                            <a href="{{url_for('book_appointment')}}" class="btn-banner-action">
+                                <i class="fas fa-plus-circle" style="color:var(--primary);"></i> Book Specialist
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="health-score-badge">
+                        <div style="text-align:center;">
+                            <div class="health-score-val">88<span
+                                    style="font-size:1.1rem; font-weight:600; opacity:0.8;">/100</span></div>
+                            <div style="font-size:0.8rem; opacity:0.9; margin-top:0.2rem;">AI Health Score</div>
+                        </div>
+                        <div
+                            style="border-left:1px solid rgba(255,255,255,0.3); padding-left:1.2rem; font-size:0.85rem;">
+                            <div style="font-weight:800; color:#86efac;"><i class="fas fa-arrow-trend-up"></i> Improving
+                                ↑</div>
+                            <div style="opacity:0.85; font-size:0.75rem;">Care Plan Active</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- APPOINTMENTS TABLE -->
-            <div class="dash-section">
-                <div class="dash-section-header">
-                    <h3><i class="fas fa-list-alt" style="color:var(--primary);margin-right:8px;"></i>My Appointments
+                <!-- 5 COLORFUL STATS CARDS -->
+                <div class="stats-colorful-grid">
+                    <div class="stat-glow-card blue">
+                        <div class="stat-glow-icon blue"><i class="fas fa-calendar-check"></i></div>
+                        <div>
+                            <div class="stat-lbl-text">Total Appointments</div>
+                            <div class="stat-val-text">{{ user_appointments|length }}</div>
+                            <div class="stat-trend blue"><i class="fas fa-circle-check"></i> Active Records</div>
+                        </div>
+                    </div>
+                    <div class="stat-glow-card cyan">
+                        <div class="stat-glow-icon cyan"><i class="fas fa-user-clock"></i></div>
+                        <div>
+                            <div class="stat-lbl-text">Upcoming Consults</div>
+                            <div class="stat-val-text">{{ approved_appts|length }}</div>
+                            <div class="stat-trend green"><i class="fas fa-check"></i> Confirmed</div>
+                        </div>
+                    </div>
+                    <div class="stat-glow-card amber">
+                        <div class="stat-glow-icon amber"><i class="fas fa-hourglass-half"></i></div>
+                        <div>
+                            <div class="stat-lbl-text">Pending Requests</div>
+                            <div class="stat-val-text">{{ pending_appts|length }}</div>
+                            <div class="stat-trend amber"><i class="fas fa-clock"></i> In Review</div>
+                        </div>
+                    </div>
+                    <div class="stat-glow-card coral">
+                        <div class="stat-glow-icon coral"><i class="fas fa-file-prescription"></i></div>
+                        <div>
+                            <div class="stat-lbl-text">Prescriptions</div>
+                            <div class="stat-val-text">{{ prescribed_appts|length }}</div>
+                            <div class="stat-trend green"><i class="fas fa-download"></i> Downloadable</div>
+                        </div>
+                    </div>
+                    <div class="stat-glow-card purple">
+                        <div class="stat-glow-icon purple"><i class="fas fa-brain"></i></div>
+                        <div>
+                            <div class="stat-lbl-text">AI Assessments</div>
+                            <div class="stat-val-text">{{ assessments|length }}</div>
+                            <div class="stat-trend green"><i class="fas fa-sparkles"></i> Vision & ML</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION A & C: TWO HERO PROMO CARDS -->
+                <div class="dashboard-features-grid">
+                    <!-- Card A: Consult Doctor Now -->
+                    <div class="feature-banner-card telehealth">
+                        <div>
+                            <span
+                                style="background:rgba(255,255,255,0.2); font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:50px; text-transform:uppercase;">Live
+                                Telehealth</span>
+                            <h3 style="margin-top:0.5rem;">Consult a Doctor Now</h3>
+                            <p>Talk to top cardiologists, neurologists, and physicians instantly from anywhere.</p>
+                            <a href="{{url_for('videocall_direct')}}" class="btn-banner-action">
+                                <i class="fas fa-video" style="color:#7c5cfc;"></i> Start Video Call
+                            </a>
+                        </div>
+                        <div style="font-size:5rem; opacity:0.25; margin-right:1rem;">
+                            <i class="fas fa-user-doctor"></i>
+                        </div>
+                    </div>
+
+                    <!-- Card C: Order Medicines -->
+                    <div class="feature-banner-card pharmacy">
+                        <div>
+                            <span
+                                style="background:rgba(255,255,255,0.2); font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:50px; text-transform:uppercase;">Express
+                                Delivery</span>
+                            <h3 style="margin-top:0.5rem;">Order Medicines</h3>
+                            <p>Locate nearby partner pharmacies on interactive map and order directly with prescription.
+                            </p>
+                            <a href="{{url_for('order_medicines')}}" class="btn-banner-action">
+                                <i class="fas fa-map-marker-alt" style="color:#0d9488;"></i> Find Medical Stores
+                            </a>
+                        </div>
+                        <div style="font-size:5rem; opacity:0.25; margin-right:1rem;">
+                            <i class="fas fa-truck-medical"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUICK ACTIONS GRID -->
+                <div style="margin-bottom: 2.2rem;">
+                    <h3
+                        style="font-size:1.25rem; color:var(--text-primary); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fas fa-bolt" style="color:var(--primary);"></i> Quick Health Actions
                     </h3>
-                    <a href="{{url_for('book_appointment')}}">+ New Appointment</a>
-                </div>
-
-                {% if user_appointments %}
-                <div class="appt-table-wrap">
-                    <table class="appt-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Name</th>
-                                <th>Doctor Type</th>
-                                <th>Time Slot</th>
-                                <th>Blood Group</th>
-                                <th>Status</th>
-                                <th>Prescription</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appt in user_appointments %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td><span class="name">{{ appt.name }}</span></td>
-                                <td>{{ appt.type_of_doctor }}</td>
-                                <td><i class="fas fa-clock" style="color:var(--text-muted);margin-right:5px;"></i>{{
-                                    appt.time_slot }}</td>
-                                <td><span
-                                        style="background:var(--primary-glow);border:1px solid var(--border-active);padding:2px 8px;border-radius:4px;font-size:0.78rem;color:var(--primary-light);">{{
-                                        appt.blood_group }}</span></td>
-                                <td>
-                                    {% if appt.status == 'Approved' %}
-                                    <span class="badge badge-approved"><i class="fas fa-check"></i> Approved</span>
-                                    {% elif appt.status == 'Pending' %}
-                                    <span class="badge badge-pending"><i class="fas fa-clock"></i> Pending</span>
-                                    {% elif appt.status == 'Prescribed' %}
-                                    <span class="badge badge-prescribed"><i class="fas fa-file-prescription"></i>
-                                        Prescribed</span>
-                                    {% else %}
-                                    <span class="badge badge-rejected">{{ appt.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if appt.status == 'Approved' %}
-                                    <div style="display: flex; gap: 8px;">
-                                        <a href="{{url_for('videocall', appointment_id=appt['_id'])}}"
-                                            class="btn-xs" style="background:var(--success); color:white; border-radius:4px; padding:4px 8px; text-decoration:none; white-space:nowrap;"><i class="fas fa-video"></i> Join Call</a>
-                                    </div>
-                                    {% elif appt.status == 'Prescribed' %}
-                                    <div style="display: flex; gap: 8px;">
-                                        <a href="{{url_for('view_prescription_patient', appointment_id=appt['_id'])}}"
-                                            class="btn-xs btn-view"><i class="fas fa-download"></i> PDF</a>
-                                        <a href="https://www.apollopharmacy.in/" target="_blank"
-                                            class="btn-xs" style="background:var(--primary); color:white; border-radius:4px; padding:4px 8px; text-decoration:none;"><i class="fas fa-pills"></i> Order Medicines</a>
-                                    </div>
-                                    {% else %}
-                                    <span style="color:var(--text-muted);font-size:0.8rem;">—</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="appt-table-wrap">
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-times"></i>
-                        <p>No appointments yet. <a href="{{url_for('book_appointment')}}"
-                                style="color:var(--primary);">Book your first appointment →</a></p>
+                    <div class="quick-actions-bar">
+                        <a href="{{url_for('book_appointment')}}" class="qa-card-btn">
+                            <i class="fas fa-calendar-plus" style="color:#0066ff;"></i>
+                            <span>Book Appointment</span>
+                        </a>
+                        <a href="{{url_for('doctors_directory')}}" class="qa-card-btn">
+                            <i class="fas fa-user-md" style="color:#0d9488;"></i>
+                            <span>Find Specialists</span>
+                        </a>
+                        <a href="{{url_for('disease_predict')}}" class="qa-card-btn">
+                            <i class="fas fa-robot" style="color:#7c5cfc;"></i>
+                            <span>Symptom Checker</span>
+                        </a>
+                        <a href="{{url_for('medical_imaging')}}" class="qa-card-btn">
+                            <i class="fas fa-x-ray" style="color:#0284c7;"></i>
+                            <span>Medical Scans</span>
+                        </a>
+                        <a href="{{url_for('order_medicines')}}" class="qa-card-btn">
+                            <i class="fas fa-pills" style="color:#16b364;"></i>
+                            <span>Order Medicines</span>
+                        </a>
+                        <a href="{{url_for('vault')}}" class="qa-card-btn">
+                            <i class="fas fa-folder-open" style="color:#f59e0b;"></i>
+                            <span>Health Records</span>
+                        </a>
+                        <a href="{{url_for('profile')}}" class="qa-card-btn">
+                            <i class="fas fa-user-circle" style="color:#e11d48;"></i>
+                            <span>My Profile</span>
+                        </a>
                     </div>
                 </div>
-                {% endif %}
+
+                <!-- SECTION B: UPCOMING APPOINTMENTS & SECTION D: AI ASSISTANT -->
+                <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; margin-bottom: 2.2rem;">
+
+                    <!-- UPCOMING APPOINTMENTS -->
+                    <div
+                        style="background:white; border-radius:var(--radius-lg); border:1px solid var(--border); padding:1.8rem; box-shadow:var(--shadow-sm);">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+                            <h3
+                                style="font-size:1.2rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+                                <i class="fas fa-calendar-alt" style="color:var(--primary);"></i> Upcoming Appointments
+                            </h3>
+                            <a href="{{url_for('book_appointment')}}"
+                                style="color:var(--primary); font-size:0.85rem; font-weight:700; text-decoration:none;">+
+                                New Booking</a>
+                        </div>
+
+                        {% if approved_appts and approved_appts|length > 0 %}
+                        {% for appt in approved_appts[:2] %}
+                        <div
+                            style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:1.2rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                            <div style="display:flex; align-items:center; gap:1rem;">
+                                <div
+                                    style="width:50px; height:50px; border-radius:12px; background:linear-gradient(135deg, #072249, #0066ff); color:white; display:flex; align-items:center; justify-content:center; font-size:1.4rem;">
+                                    <i class="fas fa-user-doctor"></i>
+                                </div>
+                                <div>
+                                    <h4 style="font-size:1.05rem; color:var(--text-primary); margin:0;">Consultation
+                                        with Specialist</h4>
+                                    <div style="font-size:0.85rem; color:var(--text-secondary);"><i
+                                            class="fas fa-stethoscope" style="color:var(--teal);"></i> {{
+                                        appt.type_of_doctor }}</div>
+                                    <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;"><i
+                                            class="fas fa-clock"></i> {{ appt.time_slot }} • <span
+                                            style="color:#16a34a; font-weight:700;">Confirmed Online</span></div>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.5rem;">
+                                <a href="{{url_for('videocall_direct')}}"
+                                    style="background:var(--primary); color:white; padding:0.5rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:0.4rem;">
+                                    <i class="fas fa-video"></i> Join Call
+                                </a>
+                                <a href="{{url_for('profile')}}"
+                                    style="background:white; border:1px solid var(--border); color:var(--text-primary); padding:0.5rem 0.8rem; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none;">Details</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div
+                            style="text-align:center; padding: 2rem; color:var(--text-muted); background:#f8fafc; border-radius:var(--radius-md); border:1px dashed var(--border);">
+                            <i class="fas fa-calendar-check"
+                                style="font-size:2.5rem; opacity:0.4; margin-bottom:0.75rem;"></i>
+                            <p style="font-size:0.95rem; margin-bottom:1rem;">No confirmed appointments yet.</p>
+                            <a href="{{url_for('book_appointment')}}" class="btn-primary"
+                                style="padding:0.6rem 1.2rem; font-size:0.85rem; text-decoration:none;">Book Your First
+                                Appointment</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- SECTION D: AI HEALTH ASSISTANT -->
+                    <div
+                        style="background:linear-gradient(135deg, #ffffff, #fbf7ff); border-radius:var(--radius-lg); border:1px solid #e9d5ff; padding:1.8rem; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; justify-content:space-between;">
+                        <div>
+                            <div
+                                style="display:flex; align-items:center; gap:0.5rem; color:#7c5cfc; font-weight:800; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">
+                                <i class="fas fa-sparkles"></i> AI Health Assistant
+                            </div>
+                            <h3 style="font-size:1.3rem; color:var(--text-primary); margin:0.4rem 0 0.6rem 0;">How are
+                                you feeling today?</h3>
+                            <p style="color:var(--text-secondary); font-size:0.9rem; line-height:1.5;">
+                                Experiencing headache, fever, cough or fatigue? Our AI symptom analysis checks over 130+
+                                clinical symptoms and provides verified preliminary insights.
+                            </p>
+                        </div>
+                        <div style="margin-top:1.5rem;">
+                            <a href="{{url_for('disease_predict')}}"
+                                style="background:linear-gradient(135deg, #7c5cfc, #6366f1); color:white; padding:0.85rem 1.4rem; border-radius:var(--radius-md); font-weight:700; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:0.6rem; box-shadow:0 4px 14px rgba(124, 92, 252, 0.35);">
+                                <i class="fas fa-stethoscope"></i> Check Symptoms Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION E: ROTATING HEALTH TIPS -->
+                <div class="health-tips-carousel">
+                    <div style="display:flex; align-items:center; gap:1.2rem;">
+                        <div
+                            style="width:48px; height:48px; border-radius:50%; background:#16b364; color:white; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+                            <i class="fas fa-apple-whole"></i>
+                        </div>
+                        <div>
+                            <strong style="color:#166534; font-size:0.95rem;">Daily Wellness Tip:</strong>
+                            <div style="color:#14532d; font-size:0.9rem; margin-top:0.2rem;" id="rotatingHealthTip">
+                                Stay hydrated! Drinking 2.5–3 liters of water daily supports cognitive focus and
+                                cellular regeneration.
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="rotateTip()"
+                        style="background:white; border:1px solid #86efac; color:#166534; padding:0.4rem 0.8rem; border-radius:50px; font-size:0.8rem; font-weight:700; cursor:pointer;">
+                        Next Tip <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- SECTION G: HEALTH TIMELINE -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+                    <div>
+                        <h3 style="font-size:1.3rem; color:var(--text-primary); margin:0;">Health Timeline</h3>
+                        <p style="color:var(--text-secondary); font-size:0.9rem; margin-top:0.2rem;">Your persistent
+                            assessment records and clinical history</p>
+                    </div>
+                    <a href="{{url_for('vault')}}" class="btn-primary"
+                        style="padding:0.5rem 1rem; font-size:0.85rem; text-decoration:none;">View All History in
+                        Vault</a>
+                </div>
+
+                <div class="timeline-container">
+                    {% if assessments and assessments|length > 0 %}
+                    {% for assessment in assessments[:5] %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-date">{{ assessment.date }}</div>
+                        <div class="timeline-card">
+                            {% if assessment.assessmentType == 'Symptoms' %}
+                            <h4><i class="fas fa-stethoscope" style="color:var(--primary);"></i> Symptom Assessment</h4>
+                            <p><strong>Symptoms:</strong> {{ assessment.symptoms | join(', ') | title }}</p>
+                            <p><strong>Assessment:</strong> {{ assessment.result }}</p>
+                            {% elif assessment.assessmentType == 'Brain MRI' %}
+                            <h4><i class="fas fa-brain" style="color:#0f766e;"></i> Brain MRI Analysis</h4>
+                            <p><strong>Finding:</strong> {{ assessment.result[:100] }}...</p>
+                            <p><strong>Confidence:</strong> {{ assessment.confidence }}%</p>
+                            {% elif assessment.assessmentType == 'Chest X-Ray' %}
+                            <h4><i class="fas fa-lungs" style="color:#0284c7;"></i> Chest X-Ray Analysis</h4>
+                            <p><strong>Finding:</strong> {{ assessment.result[:100] }}...</p>
+                            <p><strong>Confidence:</strong> {{ assessment.confidence }}%</p>
+                            {% elif assessment.assessmentType == 'Cataract' %}
+                            <h4><i class="fas fa-eye" style="color:#b45309;"></i> Cataract Screening</h4>
+                            <p><strong>Finding:</strong> {{ assessment.result[:100] }}...</p>
+                            {% else %}
+                            <h4><i class="fas fa-file-medical"></i> {{ assessment.assessmentType }}</h4>
+                            {% endif %}
+
+                            {% if assessment.riskLevel == 'LOW' %}
+                            <span class="badge badge-low">Risk: Low</span>
+                            {% elif assessment.riskLevel == 'MODERATE' %}
+                            <span class="badge badge-mod">Risk: Moderate</span>
+                            {% elif assessment.riskLevel == 'HIGH' %}
+                            <span class="badge badge-high">Risk: High</span>
+                            {% else %}
+                            <span class="badge badge-unk">Risk: {{ assessment.riskLevel }}</span>
+                            {% endif %}
+
+                            <br>
+                            <button class="btn-view-details" onclick="openDetailsModal(this)"
+                                data-title="{{ assessment.assessmentType }} Assessment"
+                                data-result="{{ assessment.result }}"
+                                data-recommendations="{{ assessment.recommendations }}">
+                                <i class="fas fa-file-alt"></i> View Report
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="text-align:center; padding: 2.5rem; color:var(--text-muted);">
+                        <i class="fas fa-clipboard-list" style="font-size:3rem; margin-bottom:1rem; opacity:0.4;"></i>
+                        <p style="font-size:1rem; margin-bottom:1rem;">No health assessments recorded yet.</p>
+                        <a href="{{url_for('disease_predict')}}" class="btn-primary"
+                            style="display:inline-block; padding:0.6rem 1.4rem; text-decoration:none;">Take an AI Health
+                            Assessment</a>
+                    </div>
+                    {% endif %}
+                </div>
+
             </div>
         </main>
     </div>
 
+    <!-- Details Modal -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-card-box">
+            <i class="fas fa-times" onclick="document.getElementById('detailsModal').classList.remove('active')"
+                style="position:absolute; top:1.5rem; right:1.5rem; font-size:1.3rem; color:var(--text-muted); cursor:pointer;"></i>
+            <h2 id="modalReportTitle" style="margin-bottom:1.2rem; color:var(--text-primary); font-size:1.3rem;">
+                Assessment Details</h2>
+            <div style="margin-bottom:1.2rem;">
+                <h4 style="color:var(--primary); margin-bottom:0.4rem; font-size:0.95rem;"><i
+                        class="fas fa-stethoscope"></i> Findings & Result</h4>
+                <div id="modalReportResult"
+                    style="color:var(--text-secondary); background:var(--bg-light); border:1px solid var(--border); padding:0.85rem; border-radius:8px; font-size:0.9rem; line-height:1.6; white-space:pre-wrap; max-height:200px; overflow-y:auto;">
+                </div>
+            </div>
+            <div>
+                <h4 style="color:var(--teal); margin-bottom:0.4rem; font-size:0.95rem;"><i class="fas fa-heartbeat"></i>
+                    AI Recommendations</h4>
+                <div id="modalReportRecommendations"
+                    style="color:var(--text-secondary); background:var(--bg-light); border:1px solid var(--border); padding:0.85rem; border-radius:8px; font-size:0.9rem; line-height:1.6; white-space:pre-wrap; max-height:200px; overflow-y:auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../static/js/script.js"></script>
+    <script>
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function (e) {
+            const bell = document.querySelector('.notification-bell');
+            const dropdown = document.getElementById('notificationDropdown');
+            if (dropdown && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        const tips = [
+            "Stay hydrated! Drinking 2.5–3 liters of water daily supports cognitive focus and cellular regeneration.",
+            "Aim for 7–8 hours of quality sleep to strengthen immune defense and metabolic health.",
+            "20 minutes of daily moderate cardio significantly reduces cardiovascular risks.",
+            "Include antioxidant-rich leafy greens and berries in your meals to combat oxidative stress."
+        ];
+        let tipIdx = 0;
+        function rotateTip() {
+            tipIdx = (tipIdx + 1) % tips.length;
+            document.getElementById('rotatingHealthTip').textContent = tips[tipIdx];
+        }
+
+        function openDetailsModal(btn) {
+            document.getElementById('modalReportTitle').textContent = btn.getAttribute('data-title') || 'Assessment Details';
+            document.getElementById('modalReportResult').textContent = btn.getAttribute('data-result') || 'No findings recorded.';
+            document.getElementById('modalReportRecommendations').textContent = btn.getAttribute('data-recommendations') || 'No recommendations recorded.';
+            document.getElementById('detailsModal').classList.add('active');
+        }
+    </script>
+</body>
+
+</html>cript>
 </body>
 
 </html>
