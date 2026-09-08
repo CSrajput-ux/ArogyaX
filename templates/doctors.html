@@ -4,108 +4,1065 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Doctors — ArogyaX</title>
-    <link rel="icon" href="../static/images/arogyax_logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        crossorigin="anonymous" />
-    <link rel="stylesheet" href="../static/css/style.css">
+    <title>Find Doctors & Specialists — ArogyaX</title>
+    <meta name="description" content="Discover top verified doctors, specialists, and surgeons on ArogyaX. Book clinic visits or instant HD video consultations.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .doctors-page-wrap {
+            padding: 94px 32px 60px;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .doctors-hero-banner {
+            background: linear-gradient(135deg, #072249 0%, #0c3d82 45%, #0f52ab 100%);
+            border-radius: 24px;
+            padding: 36px 40px;
+            color: #ffffff;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 36px rgba(7, 34, 73, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doctors-hero-banner::before {
+            content: '';
+            position: absolute;
+            top: -40px;
+            right: -40px;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .doctors-hero-banner h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .doctors-hero-banner p {
+            font-size: 1.05rem;
+            opacity: 0.95;
+            max-width: 650px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .search-filter-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 20px;
+            padding: 20px 24px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+            margin-bottom: 28px;
+        }
+
+        .search-inputs-row {
+            display: grid;
+            grid-template-columns: 1fr 220px 180px;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .search-inputs-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .search-box-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box-wrap i {
+            position: absolute;
+            left: 16px;
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .search-box-wrap input {
+            width: 100%;
+            padding: 13px 16px 13px 44px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: #1e293b;
+            transition: all 0.2s ease;
+        }
+
+        .search-box-wrap input:focus {
+            outline: none;
+            border-color: #0066ff;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.12);
+        }
+
+        .select-filter-wrap select {
+            width: 100%;
+            padding: 13px 16px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.92rem;
+            font-family: inherit;
+            color: #334155;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .select-filter-wrap select:focus {
+            outline: none;
+            border-color: #0066ff;
+            background: #ffffff;
+        }
+
+        .specialty-chips-scroll {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+        }
+
+        .spec-chip-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .spec-chip-btn:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            transform: translateY(-1px);
+        }
+
+        .spec-chip-btn.active {
+            background: linear-gradient(135deg, #0066ff, #0052cc);
+            color: #ffffff;
+            border-color: #0066ff;
+            box-shadow: 0 4px 14px rgba(0, 102, 255, 0.3);
+        }
+
+        /* Doctor Grid & Cards */
+        .doctor-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .doctor-cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .doc-premium-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doc-premium-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 16px 36px rgba(0, 102, 255, 0.12);
+            border-color: #bfdbfe;
+        }
+
+        .doc-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .doc-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .doc-avatar-img {
+            width: 76px;
+            height: 76px;
+            border-radius: 18px;
+            object-fit: cover;
+            border: 2px solid #e0e7ff;
+            background: #f8fafc;
+        }
+
+        .doc-avatar-fallback {
+            width: 76px;
+            height: 76px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0066ff 0%, #7c5cfc 100%);
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(0, 102, 255, 0.25);
+        }
+
+        .status-dot-badge {
+            position: absolute;
+            bottom: -3px;
+            right: -3px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 2px solid #ffffff;
+        }
+
+        .status-online {
+            background: #10b981;
+            color: #ffffff;
+        }
+
+        .status-offline {
+            background: #94a3b8;
+            color: #ffffff;
+        }
+
+        .doc-meta-top {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .doc-title-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .doc-title-row h3 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doc-verified-icon {
+            color: #0066ff;
+            font-size: 0.95rem;
+        }
+
+        .doc-spec-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: #eff6ff;
+            color: #0066ff;
+            margin-bottom: 6px;
+        }
+
+        .doc-rating-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.86rem;
+        }
+
+        .star-score {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fef3c7;
+            color: #b45309;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-weight: 800;
+        }
+
+        .review-count {
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        .doc-details-grid {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: #475569;
+        }
+
+        .detail-item i {
+            color: #0066ff;
+            font-size: 0.9rem;
+            width: 14px;
+            text-align: center;
+        }
+
+        .detail-item strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .doc-hosp-dist {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.83rem;
+            color: #64748b;
+            margin-bottom: 14px;
+            padding: 0 4px;
+        }
+
+        .doc-hosp-dist span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .doc-fee-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 12px;
+            margin-bottom: 16px;
+        }
+
+        .fee-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .fee-amount {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #10b981;
+        }
+
+        .doc-actions-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-doc-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-doc-profile {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .btn-doc-profile:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .btn-doc-book {
+            background: linear-gradient(135deg, #0066ff, #0052cc);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+        }
+
+        .btn-doc-book:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 102, 255, 0.35);
+        }
+
+        .btn-doc-video {
+            background: linear-gradient(135deg, #7c5cfc, #6366f1);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(124, 92, 252, 0.25);
+        }
+
+        .btn-doc-video:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(124, 92, 252, 0.35);
+        }
+
+        .results-count-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            font-size: 0.92rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .results-count-bar strong {
+            color: #0f172a;
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Top Nav Header -->
     <header class="header">
         <a href="/" class="logo">
-            <img src="../static/images/arogyax_logo.png" alt="Logo">
+            <div class="logo-brand-icon">
+                <i class="fas fa-heart-pulse"></i>
+            </div>
             <span class="brand-name">Arogya<span>X</span></span>
         </a>
+        <div class="header-search-bar" style="display:none;"></div>
         <nav class="navbar">
-            <a href="/">Home</a>
-            <a href="{{url_for('doctors_directory')}}" style="color:var(--primary);">Doctors</a>
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="{{ url_for('doctors_directory') }}" class="active" style="color:var(--primary);"><i class="fas fa-user-md"></i> Find Doctors</a>
+            <a href="{{ url_for('order_medicines') }}"><i class="fas fa-pills"></i> Order Medicines</a>
             {% if username %}
-            <a href="{{url_for('book_appointment')}}" class="btn btn-primary"
-                style="padding:7px 18px;font-size:0.85rem;"><i class="fas fa-calendar-plus"></i> Book</a>
-            <div class="user-pill">
-                <div class="avatar">{{ username[0]|upper }}</div>{{ username }}
-            </div>
+                <a href="{{ url_for('book_appointment') }}" class="btn btn-primary" style="padding:8px 18px;font-size:0.88rem;">
+                    <i class="fas fa-calendar-plus"></i> Book Visit
+                </a>
+                <div class="user-pill">
+                    <div class="avatar">{{ username[0]|upper }}</div>
+                    <span>{{ username }}</span>
+                </div>
             {% else %}
-            <a href="{{url_for('login')}}" class="btn btn-outline" style="padding:7px 16px;font-size:0.85rem;">Login</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline" style="padding:8px 18px;font-size:0.88rem;">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding:8px 18px;font-size:0.88rem;">Register</a>
             {% endif %}
         </nav>
     </header>
 
-    <div class="page-container">
-        <div class="page-hero">
-            <h1>Meet Our <span>Specialist Doctors</span></h1>
-            <p>Our team of expert physicians is dedicated to providing you with the highest quality care.</p>
+    <div class="doctors-page-wrap">
+        <!-- Hero Header -->
+        <div class="doctors-hero-banner">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.2);padding:5px 14px;border-radius:999px;font-size:0.84rem;font-weight:700;margin-bottom:12px;">
+                <i class="fas fa-shield-halved"></i> 100% Verified Medical Specialists
+            </div>
+            <h1>Find the Right Specialist</h1>
+            <p>Connect with top-rated physicians, cardiologists, neurologists, dermatologists, and surgeons. Book in-clinic appointments or instant HD video consultations.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="{{ url_for('book_appointment') }}" class="btn" style="background:#ffffff;color:#0052cc;font-weight:800;padding:10px 22px;border-radius:12px;">
+                    <i class="fas fa-calendar-check"></i> Book Fast Appointment
+                </a>
+                <a href="{{ url_for('videocall_direct') }}" class="btn" style="background:rgba(255,255,255,0.2);color:#ffffff;font-weight:700;padding:10px 22px;border-radius:12px;border:1px solid rgba(255,255,255,0.4);">
+                    <i class="fas fa-video"></i> Instant Video Consult
+                </a>
+            </div>
         </div>
 
-        <!-- Filter bar -->
-        {% if specializations %}
-        <div class="filter-bar">
-            <a href="{{url_for('doctors_directory')}}"
-                class="filter-chip {{ 'active' if not current_specialization }}">All</a>
-            {% for spec in specializations %}
-            <a href="{{url_for('doctors_directory', specialization=spec)}}"
-                class="filter-chip {{ 'active' if current_specialization == spec }}">{{ spec }}</a>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <!-- Doctors grid -->
-        {% if doctors %}
-        <div class="doctors-grid">
-            {% for doc in doctors %}
-            <div class="doctor-card">
-                <div class="doctor-card-top">
-                    {% if doc.profile_photo %}
-                    <img src="../static/{{ doc.profile_photo }}" alt="Dr. {{ doc.username }}" class="doctor-photo">
-                    {% else %}
-                    <div class="doctor-avatar-placeholder">{{ doc.username[0]|upper }}</div>
-                    {% endif %}
-                    <div class="doctor-available-badge"><i class="fas fa-circle"
-                            style="font-size:0.5rem;margin-right:4px;color:#48C78E;"></i>Available</div>
+        <!-- Search & Filters Container -->
+        <div class="search-filter-card">
+            <div class="search-inputs-row">
+                <div class="search-box-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="doctorSearchInput" placeholder="Search doctor name, specialty, hospital, or symptoms..." onkeyup="filterDoctors()">
                 </div>
-                <div class="doctor-card-body">
-                    <h3>Dr. {{ doc.username }}</h3>
-                    <div class="doctor-spec"><i class="fas fa-stethoscope"></i> {{ doc.type_of_doctor or 'Specialist' }}
-                    </div>
-                    {% if doc.bio %}
-                    <p class="doctor-bio">{{ doc.bio[:120] }}{% if doc.bio|length > 120 %}...{% endif %}</p>
-                    {% endif %}
-                    <div class="doctor-meta">
-                        <div class="doctor-meta-item"><i class="fas fa-clock"></i><span>{{ doc.years_of_experience or 0
-                                }} yrs exp</span></div>
-                        <div class="doctor-meta-item"><i class="fas fa-rupee-sign"></i><span>₹{{ doc.consultation_fee or
-                                0 }} / visit</span></div>
-                    </div>
-                    {% if doc.availability %}
-                    <div class="doctor-availability"><i class="fas fa-calendar-alt"></i> {{ doc.availability }}</div>
-                    {% endif %}
+                <div class="select-filter-wrap">
+                    <select id="sortSelect" onchange="sortDoctors()">
+                        <option value="rating">⭐ Highest Rated</option>
+                        <option value="experience">🏆 Most Experienced</option>
+                        <option value="distance">📍 Nearest First</option>
+                        <option value="fee">💰 Lowest Fee</option>
+                    </select>
                 </div>
-                <div class="doctor-card-footer">
-                    {% if username %}
-                    <a href="{{url_for('book_appointment')}}?specialization={{ doc.type_of_doctor }}"
-                        class="btn btn-primary" style="width:100%;justify-content:center;"><i
-                            class="fas fa-calendar-plus"></i> Book Appointment</a>
-                    {% else %}
-                    <a href="{{url_for('login')}}" class="btn btn-primary" style="width:100%;justify-content:center;"><i
-                            class="fas fa-sign-in-alt"></i> Login to Book</a>
-                    {% endif %}
+                <div class="select-filter-wrap">
+                    <select id="availabilityFilter" onchange="filterDoctors()">
+                        <option value="all">🕒 All Availability</option>
+                        <option value="online">🟢 Online Now</option>
+                        <option value="today">📅 Available Today</option>
+                    </select>
                 </div>
             </div>
-            {% endfor %}
+
+            <!-- Specialty Chips -->
+            <div class="specialty-chips-scroll" id="specialtyFilterChips">
+                <button class="spec-chip-btn active" onclick="selectSpecialty('all', this)">
+                    <i class="fas fa-th-large"></i> All Specialists
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Cardiologist', this)">
+                    <i class="fas fa-heartbeat" style="color:#ef4444;"></i> Cardiologist
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Neurologist', this)">
+                    <i class="fas fa-brain" style="color:#8b5cf6;"></i> Neurologist
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Dermatologist', this)">
+                    <i class="fas fa-allergies" style="color:#f59e0b;"></i> Dermatologist
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('General Physician', this)">
+                    <i class="fas fa-stethoscope" style="color:#0066ff;"></i> General Physician
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Orthopedic', this)">
+                    <i class="fas fa-bone" style="color:#00bfa6;"></i> Orthopedic
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Pediatrician', this)">
+                    <i class="fas fa-baby" style="color:#ec4899;"></i> Pediatrician
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Ophthalmologist', this)">
+                    <i class="fas fa-eye" style="color:#06b6d4;"></i> Ophthalmologist
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Dentist', this)">
+                    <i class="fas fa-tooth" style="color:#3b82f6;"></i> Dentist
+                </button>
+                <button class="spec-chip-btn" onclick="selectSpecialty('Pulmonologist', this)">
+                    <i class="fas fa-lungs" style="color:#10b981;"></i> Pulmonologist
+                </button>
+            </div>
         </div>
-        {% else %}
-        <div class="empty-state" style="margin:3rem auto;">
-            <i class="fas fa-user-md"></i>
-            <p>No doctors found{% if current_specialization %} for {{ current_specialization }}{% endif %}.</p>
+
+        <!-- Results Header -->
+        <div class="results-count-bar">
+            <span>Showing <strong id="visibleCount">8</strong> Verified Specialists</span>
+            <span style="font-size:0.85rem;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Average response time: <strong>&lt; 5 mins</strong></span>
         </div>
-        {% endif %}
+
+        <!-- Doctor Cards Grid -->
+        <div class="doctor-cards-grid" id="doctorsGrid">
+            <!-- Doctor 1: Dr. Priya Sharma -->
+            <div class="doc-premium-card" data-name="Dr. Priya Sharma" data-spec="Cardiologist" data-hospital="City Care Hospital" data-rating="4.8" data-reviews="320" data-exp="10" data-dist="1.2" data-fee="800" data-status="online" data-lang="English, Hindi">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #ef4444, #f43f5e);">PS</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Priya Sharma</h3>
+                                <i class="fas fa-circle-check doc-verified-icon" title="Verified Specialist"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#fee2e2;color:#dc2626;">
+                                <i class="fas fa-heartbeat"></i> Cardiologist
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.8</span>
+                                <span class="review-count">(320 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>10+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>English, Hindi</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MD, DM (Cardio)</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Mon - Fri 10 AM</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> City Care Hospital</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>1.2 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹800</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Instant Video Available</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_priya') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Cardiologist" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 2: Dr. Rahul Verma -->
+            <div class="doc-premium-card" data-name="Dr. Rahul Verma" data-spec="Neurologist" data-hospital="NeuroLife Clinic" data-rating="4.7" data-reviews="210" data-exp="8" data-dist="2.4" data-fee="1000" data-status="online" data-lang="English, Hindi">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9);">RV</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Rahul Verma</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#ede9fe;color:#6d28d9;">
+                                <i class="fas fa-brain"></i> Neurologist
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.7</span>
+                                <span class="review-count">(210 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>8+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>English, Hindi</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MD, DM (Neuro)</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Tue, Thu, Sat</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> NeuroLife Clinic</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>2.4 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹1,000</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Next slot: 2:00 PM</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_rahul') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Neurologist" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 3: Dr. Ananya Mehta -->
+            <div class="doc-premium-card" data-name="Dr. Ananya Mehta" data-spec="Dermatologist" data-hospital="SkinCare Hospital" data-rating="4.9" data-reviews="180" data-exp="6" data-dist="3.1" data-fee="700" data-status="online" data-lang="English, Hindi, Gujarati">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #f59e0b, #d97706);">AM</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Ananya Mehta</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#fef3c7;color:#b45309;">
+                                <i class="fas fa-allergies"></i> Dermatologist
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.9</span>
+                                <span class="review-count">(180 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>6+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>Eng, Hin, Guj</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MD (Dermatology)</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Mon - Sat 11 AM</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> SkinCare Hospital</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>3.1 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹700</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Available Today</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_ananya') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Dermatologist" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 4: Dr. Suresh Iyer -->
+            <div class="doc-premium-card" data-name="Dr. Suresh Iyer" data-spec="Orthopedic" data-hospital="Apollo Health Center" data-rating="4.6" data-reviews="160" data-exp="12" data-dist="1.8" data-fee="900" data-status="offline" data-lang="English, Tamil, Hindi">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #00bfa6, #0d9488);">SI</div>
+                            <span class="status-dot-badge status-offline"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Offline</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Suresh Iyer</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#ccfbf1;color:#0f766e;">
+                                <i class="fas fa-bone"></i> Orthopedic
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.6</span>
+                                <span class="review-count">(160 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>12+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>Eng, Tam, Hin</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MS (Ortho), DNB</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Mon - Fri 9 AM</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> Apollo Health</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>1.8 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹900</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#fef3c7;color:#b45309;padding:4px 8px;border-radius:6px;font-weight:700;">Available Tomorrow</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_suresh') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Orthopedic" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 5: Dr. Neha Kapoor -->
+            <div class="doc-premium-card" data-name="Dr. Neha Kapoor" data-spec="General Physician" data-hospital="Max Healthcare" data-rating="4.8" data-reviews="400" data-exp="9" data-dist="0.9" data-fee="500" data-status="online" data-lang="English, Hindi, Punjabi">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #0066ff, #0284c7);">NK</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Neha Kapoor</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#dbeafe;color:#1d4ed8;">
+                                <i class="fas fa-stethoscope"></i> General Physician
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.8</span>
+                                <span class="review-count">(400 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>9+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>Eng, Hin, Pun</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MBBS, MD (Medicine)</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Daily 8 AM - 8 PM</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> Max Healthcare</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>0.9 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹500</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Instant Connect</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_neha') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=General Physician" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 6: Dr. Amit Singh -->
+            <div class="doc-premium-card" data-name="Dr. Amit Singh" data-spec="Pediatrician" data-hospital="Rainbow Children Clinic" data-rating="4.7" data-reviews="260" data-exp="7" data-dist="3.5" data-fee="600" data-status="online" data-lang="English, Hindi">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #ec4899, #db2777);">AS</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Amit Singh</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#fce7f3;color:#be185d;">
+                                <i class="fas fa-baby"></i> Pediatrician
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.7</span>
+                                <span class="review-count">(260 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>7+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>English, Hindi</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MD (Pediatrics)</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Mon - Sat 10 AM</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> Rainbow Children</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>3.5 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹600</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Child Care Specialist</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_amit') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Pediatrician" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 7: Dr. Priya Nair (Ophthalmologist) -->
+            <div class="doc-premium-card" data-name="Dr. Priya Nair" data-spec="Ophthalmologist" data-hospital="EyeVision Laser Center" data-rating="4.9" data-reviews="340" data-exp="10" data-dist="2.1" data-fee="700" data-status="online" data-lang="English, Hindi, Malayalam">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #06b6d4, #0891b2);">PN</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Priya Nair</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#cffafe;color:#0e7490;">
+                                <i class="fas fa-eye"></i> Ophthalmologist
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.9</span>
+                                <span class="review-count">(340 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>10+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>Eng, Hin, Mal</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MS (Ophthal), FICO</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Mon - Fri 11 AM</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> EyeVision Laser Center</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>2.1 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹700</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Cataract & Retina</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_priya') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Ophthalmologist" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+
+            <!-- Doctor 8: Dr. Sandeep Kaur (Pulmonologist) -->
+            <div class="doc-premium-card" data-name="Dr. Sandeep Kaur" data-spec="Pulmonologist" data-hospital="Apex Chest & Respiratory" data-rating="4.8" data-reviews="190" data-exp="8" data-dist="2.8" data-fee="600" data-status="online" data-lang="English, Punjabi, Hindi">
+                <div>
+                    <div class="doc-card-header">
+                        <div class="doc-avatar-wrap">
+                            <div class="doc-avatar-fallback" style="background:linear-gradient(135deg, #10b981, #059669);">SK</div>
+                            <span class="status-dot-badge status-online"><i class="fas fa-circle" style="font-size:0.4rem;"></i> Online</span>
+                        </div>
+                        <div class="doc-meta-top">
+                            <div class="doc-title-row">
+                                <h3>Dr. Sandeep Kaur</h3>
+                                <i class="fas fa-circle-check doc-verified-icon"></i>
+                            </div>
+                            <div class="doc-spec-badge" style="background:#d1fae5;color:#047857;">
+                                <i class="fas fa-lungs"></i> Pulmonologist
+                            </div>
+                            <div class="doc-rating-row">
+                                <span class="star-score"><i class="fas fa-star" style="color:#f59e0b;"></i> 4.8</span>
+                                <span class="review-count">(190 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doc-details-grid">
+                        <div class="detail-item"><i class="fas fa-award"></i><span><strong>8+ yrs</strong> exp</span></div>
+                        <div class="detail-item"><i class="fas fa-language"></i><span>Eng, Pun, Hin</span></div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><span>MD (Pulmonology)</span></div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><span>Mon, Tue, Thu</span></div>
+                    </div>
+
+                    <div class="doc-hosp-dist">
+                        <span><i class="fas fa-hospital" style="color:#64748b;"></i> Apex Chest Care</span>
+                        <span><i class="fas fa-map-marker-alt" style="color:#0066ff;"></i> <strong>2.8 km</strong> away</span>
+                    </div>
+
+                    <div class="doc-fee-row">
+                        <div>
+                            <span class="fee-label">Consultation Fee</span>
+                            <div class="fee-amount">₹600</div>
+                        </div>
+                        <span style="font-size:0.78rem;background:#ecfdf5;color:#059669;padding:4px 8px;border-radius:6px;font-weight:700;">Lungs & Asthma</span>
+                    </div>
+                </div>
+
+                <div class="doc-actions-wrap">
+                    <a href="{{ url_for('doctor_profile', doctor_id='dr_sandeep') }}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
+                    <a href="{{ url_for('book_appointment') }}?specialization=Pulmonologist" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Footer -->
     <section class="footer">
-        <div class="credit">© 2024 <span>ArogyaX</span> — Hospital Management System. All rights reserved.</div>
+        <div class="credit">© 2024 <span>ArogyaX</span> — Digital AI Healthcare Platform. "Your Health, Our Priority"</div>
     </section>
-    <script src="../static/js/script.js"></script>
+
+    <!-- Client-side Interactive Filter & Sorting Logic -->
+    <script>
+        let currentSelectedSpecialty = 'all';
+
+        function selectSpecialty(spec, el) {
+            currentSelectedSpecialty = spec;
+            document.querySelectorAll('.spec-chip-btn').forEach(btn => btn.classList.remove('active'));
+            if (el) el.classList.add('active');
+            filterDoctors();
+        }
+
+        function filterDoctors() {
+            const query = (document.getElementById('doctorSearchInput').value || '').toLowerCase().trim();
+            const avail = document.getElementById('availabilityFilter').value;
+            const cards = document.querySelectorAll('.doc-premium-card');
+            let visible = 0;
+
+            cards.forEach(card => {
+                const name = (card.getAttribute('data-name') || '').toLowerCase();
+                const spec = (card.getAttribute('data-spec') || '').toLowerCase();
+                const hosp = (card.getAttribute('data-hospital') || '').toLowerCase();
+                const status = card.getAttribute('data-status') || '';
+
+                const matchesQuery = !query || name.includes(query) || spec.includes(query) || hosp.includes(query);
+                const matchesSpec = currentSelectedSpecialty === 'all' || spec.includes(currentSelectedSpecialty.toLowerCase());
+                const matchesAvail = avail === 'all' || (avail === 'online' && status === 'online') || avail === 'today';
+
+                if (matchesQuery && matchesSpec && matchesAvail) {
+                    card.style.display = 'flex';
+                    visible++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            document.getElementById('visibleCount').textContent = visible;
+        }
+
+        function sortDoctors() {
+            const criteria = document.getElementById('sortSelect').value;
+            const grid = document.getElementById('doctorsGrid');
+            const cards = Array.from(grid.querySelectorAll('.doc-premium-card'));
+
+            cards.sort((a, b) => {
+                if (criteria === 'rating') {
+                    return parseFloat(b.getAttribute('data-rating') || 0) - parseFloat(a.getAttribute('data-rating') || 0);
+                } else if (criteria === 'experience') {
+                    return parseFloat(b.getAttribute('data-exp') || 0) - parseFloat(a.getAttribute('data-exp') || 0);
+                } else if (criteria === 'distance') {
+                    return parseFloat(a.getAttribute('data-dist') || 0) - parseFloat(b.getAttribute('data-dist') || 0);
+                } else if (criteria === 'fee') {
+                    return parseFloat(a.getAttribute('data-fee') || 0) - parseFloat(b.getAttribute('data-fee') || 0);
+                }
+                return 0;
+            });
+
+            cards.forEach(card => grid.appendChild(card));
+        }
+
+        // Initialize URL parameters if any
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const specParam = urlParams.get('specialization');
+            if (specParam) {
+                const matchingBtn = Array.from(document.querySelectorAll('.spec-chip-btn')).find(b => b.textContent.toLowerCase().includes(specParam.toLowerCase()));
+                if (matchingBtn) {
+                    selectSpecialty(specParam, matchingBtn);
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>

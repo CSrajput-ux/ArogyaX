@@ -4,52 +4,804 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Consultation — ArogyaX</title>
-    <link rel="icon" href="../static/images/arogyax_logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        crossorigin="anonymous" />
-    <link rel="stylesheet" href="../static/css/style.css">
+    <title>Telehealth HD Video Consultation — ArogyaX</title>
+    <meta name="description" content="Secure, end-to-end encrypted AI-powered telehealth consultation studio on ArogyaX.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            background: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .telehealth-header {
+            background: #1e293b;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #334155;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .telehealth-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .telehealth-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+
+        .telehealth-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .call-timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            border: 1px solid #334155;
+        }
+
+        .telehealth-body-layout {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Video Area (Left / Main) */
+        .video-stage-main {
+            flex: 1;
+            background: #090d16;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .main-remote-video-wrap {
+            width: 100%;
+            height: 100%;
+            max-width: 1100px;
+            max-height: 82vh;
+            background: #1e293b;
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+        }
+
+        .doctor-stream-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .doc-avatar-big {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0066ff 0%, #7c5cfc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 20px;
+            box-shadow: 0 0 40px rgba(0, 102, 255, 0.4);
+            animation: pulseGlow 3s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 102, 255, 0.3); }
+            100% { transform: scale(1.04); box-shadow: 0 0 50px rgba(124, 92, 252, 0.6); }
+        }
+
+        .stream-name-tag {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stream-quality-tag {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        /* PiP Self-Video Box */
+        .pip-self-video {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 220px;
+            height: 150px;
+            background: #0f172a;
+            border-radius: 16px;
+            border: 2px solid #3b82f6;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pip-self-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .pip-name-tag {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        /* Bottom Floating Control Bar */
+        .telehealth-control-bar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid #475569;
+            border-radius: 999px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+        }
+
+        .ctrl-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: #334155;
+            color: #f8fafc;
+            font-size: 1.15rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ctrl-btn:hover {
+            background: #475569;
+            transform: translateY(-2px);
+        }
+
+        .ctrl-btn.active-muted {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .ctrl-btn.btn-end-call {
+            background: #dc2626;
+            color: #ffffff;
+            width: 54px;
+            height: 54px;
+            font-size: 1.3rem;
+            margin-left: 10px;
+        }
+
+        .ctrl-btn.btn-end-call:hover {
+            background: #b91c1c;
+            transform: scale(1.08);
+        }
+
+        .ctrl-btn.btn-panel-toggle.active {
+            background: #0066ff;
+            color: #ffffff;
+        }
+
+        /* Right Panel Drawer */
+        .telehealth-side-panel {
+            width: 380px;
+            background: #1e293b;
+            border-left: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 900px) {
+            .telehealth-side-panel {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                max-width: 360px;
+                z-index: 30;
+                transform: translateX(100%);
+            }
+            .telehealth-side-panel.open {
+                transform: translateX(0);
+            }
+        }
+
+        .side-panel-tabs {
+            display: flex;
+            border-bottom: 1px solid #334155;
+            background: #0f172a;
+        }
+
+        .side-tab-btn {
+            flex: 1;
+            padding: 14px 10px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .side-tab-btn.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.06);
+        }
+
+        .side-tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+
+        .side-tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Doctor Details Tab */
+        .doctor-card-panel {
+            background: #0f172a;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #334155;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+
+        .doc-panel-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0066ff, #7c5cfc);
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+        }
+
+        .vitals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .vital-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .vital-box .val {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #38bdf8;
+        }
+
+        .vital-box .lbl {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        /* Chat Tab */
+        .chat-messages-wrap {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-right: 4px;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.86rem;
+            line-height: 1.4;
+        }
+
+        .chat-bubble.remote {
+            background: #334155;
+            color: #f8fafc;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-bubble.self {
+            background: #0066ff;
+            color: #ffffff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #f8fafc;
+            font-family: inherit;
+            font-size: 0.88rem;
+        }
+
+        .chat-input-row input:focus {
+            outline: none;
+            border-color: #0066ff;
+        }
+
+        .chat-input-row button {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            background: #0066ff;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        /* Prescription Tab */
+        .rx-form-wrap {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 16px;
+        }
+
+        .rx-form-wrap label {
+            display: block;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .rx-form-wrap input, .rx-form-wrap textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: #f8fafc;
+            font-family: inherit;
+            font-size: 0.86rem;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 
 <body>
-    <header class="header">
-        <a href="/" class="logo">
-            <img src="../static/images/arogyax_logo.png" alt="Logo">
-            <span class="brand-name">Arogya<span>X</span></span>
+    <!-- Top Bar -->
+    <div class="telehealth-header">
+        <a href="/" class="telehealth-logo">
+            <img src="{{ url_for('static', filename='images/arogyax_logo.png') }}" alt="ArogyaX Logo">
+            <span>Arogya<span style="color:#0066ff;">X</span> Telehealth Studio</span>
         </a>
-        <nav class="navbar">
-            <a href="/">Dashboard</a>
-            <a href="{{url_for('logout')}}" class="btn btn-outline" style="padding:7px 16px;font-size:0.85rem;"><i
-                    class="fas fa-sign-out-alt"></i> Logout</a>
-            <div class="user-pill">
-                <div class="avatar">{{ username[0]|upper }}</div>
-                {{ username }}
-            </div>
-        </nav>
-    </header>
 
-    <div class="videocall-container">
-        <div style="margin-bottom:1.5rem;">
-            <a href="/" style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-arrow-left"></i> Back to
-                Dashboard</a>
-        </div>
-        <div class="page-hero" style="margin-bottom:1.5rem;">
-            <h1>Video <span>Consultation</span></h1>
-            <p>Join a secure video call with your doctor. Ensure your camera and microphone are enabled before joining.
-            </p>
-        </div>
-        <div class="videocall-frame">
-            <iframe src="https://meet.jit.si/ArogyaX-Appt-{{ appointment_id }}"
-                allow="camera; microphone; fullscreen; display-capture; autoplay"></iframe>
-        </div>
-        <div style="margin-top:1.5rem;text-align:center;">
-            <div class="alert alert-info" style="display:inline-flex;max-width:600px;">
-                <i class="fas fa-info-circle"></i>
-                <span>Your video call room is private. Share the URL with your doctor to connect.</span>
+        <div style="display:flex;align-items:center;gap:14px;">
+            <div class="telehealth-status-badge">
+                <i class="fas fa-lock" style="font-size:0.75rem;"></i> End-to-End Encrypted Session
+            </div>
+            <div class="call-timer-badge">
+                <i class="fas fa-clock" style="color:#38bdf8;"></i> <span id="callDurationTimer">00:00</span>
             </div>
         </div>
     </div>
-    <script src="../static/js/script.js"></script>
-</main></div></body>
+
+    <!-- Main Consultation Workspace -->
+    <div class="telehealth-body-layout">
+        <!-- Video Stage -->
+        <div class="video-stage-main">
+            <div class="main-remote-video-wrap" id="mainVideoWrap">
+                <div class="stream-quality-tag">
+                    <i class="fas fa-signal"></i> HD 1080p • 60 fps
+                </div>
+
+                <div class="doctor-stream-placeholder">
+                    <div class="doc-avatar-big">
+                        {{ doctor_name[3:5]|upper if doctor_name and doctor_name.startswith('Dr.') else 'PS' }}
+                    </div>
+                    <h2 style="font-size:1.6rem;font-weight:800;margin:0 0 6px 0;color:#ffffff;">
+                        {{ doctor_name or 'Dr. Priya Sharma' }}
+                    </h2>
+                    <p style="color:#94a3b8;font-size:0.95rem;margin:0;">
+                        {{ specialization or 'Senior Cardiologist & Specialist' }}
+                    </p>
+                    <div style="margin-top:14px;display:inline-flex;align-items:center;gap:6px;background:rgba(16, 185, 129, 0.2);color:#34d399;padding:4px 12px;border-radius:999px;font-size:0.8rem;font-weight:700;">
+                        <i class="fas fa-circle" style="font-size:0.4rem;"></i> Live Stream Connected
+                    </div>
+                </div>
+
+                <div class="stream-name-tag">
+                    <i class="fas fa-user-doctor" style="color:#0066ff;"></i> {{ doctor_name or 'Dr. Priya Sharma' }} (Doctor)
+                </div>
+            </div>
+
+            <!-- Self-Video PiP Preview -->
+            <div class="pip-self-video" id="selfPipWrap">
+                <video id="localVideoFeed" autoplay playsinline muted></video>
+                <div id="noCamFallback" style="display:none;text-align:center;padding:10px;">
+                    <i class="fas fa-user" style="font-size:2rem;color:#64748b;"></i>
+                </div>
+                <div class="pip-name-tag">
+                    <i class="fas fa-user"></i> You ({{ username or 'Patient' }})
+                </div>
+            </div>
+
+            <!-- Bottom Floating Action Toolbar -->
+            <div class="telehealth-control-bar">
+                <button class="ctrl-btn" id="btnMicToggle" title="Toggle Microphone" onclick="toggleMic()">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="ctrl-btn" id="btnCamToggle" title="Toggle Camera" onclick="toggleCam()">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="ctrl-btn" id="btnScreenShare" title="Share Screen" onclick="toggleScreenShare()">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button class="ctrl-btn btn-panel-toggle" id="btnChatToggle" title="In-Call Chat" onclick="switchSideTab('chat')">
+                    <i class="fas fa-comments"></i>
+                </button>
+                <button class="ctrl-btn btn-panel-toggle" id="btnPrescriptionToggle" title="Digital Prescription" onclick="switchSideTab('rx')">
+                    <i class="fas fa-file-prescription"></i>
+                </button>
+                <button class="ctrl-btn btn-end-call" title="End Consultation" onclick="endConsultation()">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Side Panel -->
+        <div class="telehealth-side-panel" id="telehealthSidePanel">
+            <div class="side-panel-tabs">
+                <button class="side-tab-btn active" id="tabBtnDetails" onclick="switchSideTab('details')">
+                    <i class="fas fa-circle-info"></i> Details
+                </button>
+                <button class="side-tab-btn" id="tabBtnChat" onclick="switchSideTab('chat')">
+                    <i class="fas fa-comment-dots"></i> Chat
+                </button>
+                <button class="side-tab-btn" id="tabBtnRx" onclick="switchSideTab('rx')">
+                    <i class="fas fa-prescription"></i> Rx Notes
+                </button>
+            </div>
+
+            <!-- Tab 1: Clinical Details & Vitals -->
+            <div class="side-tab-content active" id="tabContentDetails">
+                <div class="doctor-card-panel">
+                    <div class="doc-panel-avatar">
+                        {{ doctor_name[3:5]|upper if doctor_name and doctor_name.startswith('Dr.') else 'PS' }}
+                    </div>
+                    <h3 style="font-size:1.15rem;font-weight:800;margin:0 0 4px 0;color:#ffffff;">
+                        {{ doctor_name or 'Dr. Priya Sharma' }}
+                    </h3>
+                    <p style="font-size:0.85rem;color:#38bdf8;margin:0 0 8px 0;font-weight:700;">
+                        {{ specialization or 'Senior Cardiologist' }}
+                    </p>
+                    <span style="font-size:0.8rem;color:#94a3b8;">
+                        <i class="fas fa-hospital"></i> City Care Hospital & Research Center
+                    </span>
+                </div>
+
+                <h4 style="font-size:0.9rem;font-weight:700;color:#94a3b8;margin:0 0 10px 0;text-transform:uppercase;letter-spacing:0.04em;">
+                    Real-time Patient Vitals
+                </h4>
+                <div class="vitals-grid">
+                    <div class="vital-box">
+                        <div class="val">74 bpm</div>
+                        <div class="lbl">Pulse / Heart Rate</div>
+                    </div>
+                    <div class="vital-box">
+                        <div class="val">120/80</div>
+                        <div class="lbl">Blood Pressure</div>
+                    </div>
+                    <div class="vital-box">
+                        <div class="val">99%</div>
+                        <div class="lbl">Blood Oxygen (SpO2)</div>
+                    </div>
+                    <div class="vital-box">
+                        <div class="val">98.4°F</div>
+                        <div class="lbl">Temperature</div>
+                    </div>
+                </div>
+
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:14px;">
+                    <div style="font-size:0.8rem;color:#94a3b8;font-weight:700;margin-bottom:6px;">Appointment ID</div>
+                    <div style="font-size:0.88rem;color:#f8fafc;font-family:monospace;font-weight:700;">#{{ appointment_id or 'AROGYAX-LIVE-7712' }}</div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Live In-Call Chat -->
+            <div class="side-tab-content" id="tabContentChat">
+                <div class="chat-messages-wrap" id="chatMessagesWrap">
+                    <div class="chat-bubble remote">
+                        <strong>Dr. Priya Sharma:</strong><br>
+                        Hello {{ username or 'Patient' }}! I am reviewing your recent symptom report. Can you hear and see me clearly?
+                    </div>
+                    <div class="chat-bubble self">
+                        <strong>You:</strong><br>
+                        Yes Doctor, loud and clear.
+                    </div>
+                </div>
+
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                    <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- Tab 3: Digital Prescription / Clinical Rx -->
+            <div class="side-tab-content" id="tabContentRx">
+                <div class="rx-form-wrap">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <span style="font-size:1.1rem;font-weight:800;color:#38bdf8;"><i class="fas fa-file-prescription"></i> Digital Rx</span>
+                        <span style="font-size:0.75rem;background:#059669;color:#ffffff;padding:2px 8px;border-radius:4px;font-weight:700;">Verified</span>
+                    </div>
+
+                    <label>Prescribed Medicines & Dosage</label>
+                    <textarea rows="3" placeholder="e.g. Tab Paracetamol 500mg (1-0-1 after meals for 3 days)&#10;Tab Cetirizine 10mg (0-0-1 at night)">Tab Paracetamol 500mg (1-0-1) - 3 days
+Tab Vitamin C 500mg (1-0-0) - 5 days</textarea>
+
+                    <label>Clinical Advice & Lifestyle Instructions</label>
+                    <textarea rows="2" placeholder="Dietary restrictions, rest, fluid intake...">Drink plenty of warm fluids. Avoid cold beverages. Rest for 48 hours.</textarea>
+
+                    <button onclick="alert('Digital prescription saved to your ArogyaX Medical Vault!')" style="width:100%;padding:12px;border-radius:10px;background:linear-gradient(135deg, #0066ff, #0052cc);color:#ffffff;border:none;font-weight:800;cursor:pointer;">
+                        <i class="fas fa-download"></i> Save to Health Vault
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client-side Telehealth Logic -->
+    <script>
+        let isMicMuted = false;
+        let isCamOff = false;
+        let isScreenSharing = false;
+        let localStream = null;
+        let callSeconds = 0;
+
+        // Start call timer
+        setInterval(() => {
+            callSeconds++;
+            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const secs = String(callSeconds % 60).padStart(2, '0');
+            const timerEl = document.getElementById('callDurationTimer');
+            if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        // Attempt user media stream for PiP
+        async function initLocalCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const videoEl = document.getElementById('localVideoFeed');
+                if (videoEl) {
+                    videoEl.srcObject = localStream;
+                }
+            } catch (err) {
+                console.log("Local camera stream demo fallback mode:", err);
+                const videoEl = document.getElementById('localVideoFeed');
+                const fallbackEl = document.getElementById('noCamFallback');
+                if (videoEl) videoEl.style.display = 'none';
+                if (fallbackEl) fallbackEl.style.display = 'block';
+            }
+        }
+
+        function toggleMic() {
+            isMicMuted = !isMicMuted;
+            const btn = document.getElementById('btnMicToggle');
+            if (localStream) {
+                localStream.getAudioTracks().forEach(track => track.enabled = !isMicMuted);
+            }
+            if (isMicMuted) {
+                btn.classList.add('active-muted');
+                btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+            } else {
+                btn.classList.remove('active-muted');
+                btn.innerHTML = '<i class="fas fa-microphone"></i>';
+            }
+        }
+
+        function toggleCam() {
+            isCamOff = !isCamOff;
+            const btn = document.getElementById('btnCamToggle');
+            if (localStream) {
+                localStream.getVideoTracks().forEach(track => track.enabled = !isCamOff);
+            }
+            if (isCamOff) {
+                btn.classList.add('active-muted');
+                btn.innerHTML = '<i class="fas fa-video-slash"></i>';
+            } else {
+                btn.classList.remove('active-muted');
+                btn.innerHTML = '<i class="fas fa-video"></i>';
+            }
+        }
+
+        function toggleScreenShare() {
+            isScreenSharing = !isScreenSharing;
+            const btn = document.getElementById('btnScreenShare');
+            if (isScreenSharing) {
+                btn.style.background = '#0066ff';
+                btn.style.color = '#ffffff';
+                alert('Screen sharing active.');
+            } else {
+                btn.style.background = '#334155';
+                btn.style.color = '#f8fafc';
+            }
+        }
+
+        function switchSideTab(tabName) {
+            document.querySelectorAll('.side-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.side-tab-content').forEach(c => c.classList.remove('active'));
+
+            if (tabName === 'details') {
+                document.getElementById('tabBtnDetails').classList.add('active');
+                document.getElementById('tabContentDetails').classList.add('active');
+            } else if (tabName === 'chat') {
+                document.getElementById('tabBtnChat').classList.add('active');
+                document.getElementById('tabContentChat').classList.add('active');
+            } else if (tabName === 'rx') {
+                document.getElementById('tabBtnRx').classList.add('active');
+                document.getElementById('tabContentRx').classList.add('active');
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = (input.value || '').trim();
+            if (!text) return;
+
+            const wrap = document.getElementById('chatMessagesWrap');
+            const newBubble = document.createElement('div');
+            newBubble.className = 'chat-bubble self';
+            newBubble.innerHTML = `<strong>You:</strong><br>${text}`;
+            wrap.appendChild(newBubble);
+            input.value = '';
+            wrap.scrollTop = wrap.scrollHeight;
+
+            // Auto simulated doctor reply
+            setTimeout(() => {
+                const docBubble = document.createElement('div');
+                docBubble.className = 'chat-bubble remote';
+                docBubble.innerHTML = `<strong>Dr. Priya Sharma:</strong><br>Understood, noting that down in your electronic chart.`;
+                wrap.appendChild(docBubble);
+                wrap.scrollTop = wrap.scrollHeight;
+            }, 1200);
+        }
+
+        function endConsultation() {
+            if (confirm("Are you sure you want to conclude this video consultation session?")) {
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
+                window.location.href = "/";
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initLocalCamera);
+    </script>
+</body>
 
 </html>
