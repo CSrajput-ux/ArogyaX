@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doctor.username|capitalize if doctor else 'Doctor' }} — ArogyaX Specialist Profile</title>
+    <meta name="description" content="View verified doctor credentials, experience, patient reviews, and book instant appointment or video consultation on ArogyaX.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .profile-page-wrap {
+            padding: 94px 32px 60px;
+            max-width: 1320px;
+            margin: 0 auto;
+        }
+
+        .back-nav-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #475569;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.92rem;
+            padding: 8px 16px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back-link:hover {
+            color: #0066ff;
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        .doc-profile-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+        }
+
+        @media (max-width: 992px) {
+            .doc-profile-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Doctor Hero Card */
+        .doc-hero-card {
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid #edf2f7;
+            padding: 32px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .doc-hero-top {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 600px) {
+            .doc-hero-top {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+
+        .doc-hero-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .doc-hero-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #0066ff 0%, #7c5cfc 100%);
+            color: #ffffff;
+            font-size: 2.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 24px rgba(0, 102, 255, 0.25);
+            border: 4px solid #ffffff;
+        }
+
+        .doc-hero-info h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hero-spec-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            background: #eff6ff;
+            color: #0066ff;
+            margin-bottom: 10px;
+        }
+
+        .doc-hospital-tag {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .doc-stat-metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        @media (max-width: 600px) {
+            .doc-stat-metrics-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-metric-box {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 12px 14px;
+            text-align: center;
+            border: 1px solid #f1f5f9;
+        }
+
+        .stat-metric-val {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+
+        .stat-metric-lbl {
+            font-size: 0.76rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Detail Section Cards */
+        .doc-section-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            margin-bottom: 24px;
+        }
+
+        .doc-section-card h2 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .doc-section-card h2 i {
+            color: #0066ff;
+            font-size: 1.1rem;
+        }
+
+        .doc-bio-text {
+            font-size: 0.96rem;
+            line-height: 1.7;
+            color: #334155;
+            margin-bottom: 16px;
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag-item {
+            background: #f1f5f9;
+            color: #334155;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+        }
+
+        .edu-timeline-item {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .edu-icon-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #e0e7ff;
+            color: #4338ca;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .edu-content h4 {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 2px 0;
+        }
+
+        .edu-content p {
+            font-size: 0.86rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        /* Review Card */
+        .review-item {
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 14px;
+            margin-bottom: 14px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .reviewer-name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .review-text {
+            font-size: 0.88rem;
+            color: #475569;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Sticky Booking Sidebar Box */
+        .booking-sticky-box {
+            position: sticky;
+            top: 90px;
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+            padding: 28px;
+            box-shadow: 0 12px 36px rgba(15, 23, 42, 0.08);
+        }
+
+        .fee-card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            margin-bottom: 20px;
+        }
+
+        .fee-large {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .slot-selector-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .slot-pill-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .slot-btn {
+            padding: 9px 6px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .slot-btn:hover {
+            border-color: #0066ff;
+            color: #0066ff;
+            background: #eff6ff;
+        }
+
+        .slot-btn.active {
+            border-color: #0066ff;
+            background: #0066ff;
+            color: #ffffff;
+        }
+
+        .btn-full-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-decoration: none;
+            margin-bottom: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .btn-book-primary {
+            background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+            color: #ffffff;
+            box-shadow: 0 6px 18px rgba(0, 102, 255, 0.28);
+        }
+
+        .btn-book-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0, 102, 255, 0.38);
+        }
+
+        .btn-video-purple {
+            background: linear-gradient(135deg, #7c5cfc 0%, #6366f1 100%);
+            color: #ffffff;
+            box-shadow: 0 6px 18px rgba(124, 92, 252, 0.28);
+        }
+
+        .btn-video-purple:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(124, 92, 252, 0.38);
+        }
+
+        .guarantee-list {
+            list-style: none;
+            padding: 0;
+            margin: 18px 0 0;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .guarantee-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .guarantee-list li i {
+            color: #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Nav Header -->
+    <header class="header">
+        <a href="/" class="logo">
+            <div class="logo-brand-icon">
+                <i class="fas fa-heart-pulse"></i>
+            </div>
+            <span class="brand-name">Arogya<span>X</span></span>
+        </a>
+        <nav class="navbar">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="{{ url_for('doctors_directory') }}" style="color:var(--primary);"><i class="fas fa-user-md"></i> Find Doctors</a>
+            <a href="{{ url_for('order_medicines') }}"><i class="fas fa-pills"></i> Order Medicines</a>
+            {% if username %}
+                <a href="{{ url_for('book_appointment') }}" class="btn btn-primary" style="padding:8px 18px;font-size:0.88rem;">
+                    <i class="fas fa-calendar-plus"></i> Book Visit
+                </a>
+                <div class="user-pill">
+                    <div class="avatar">{{ username[0]|upper }}</div>
+                    <span>{{ username }}</span>
+                </div>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-outline" style="padding:8px 18px;font-size:0.88rem;">Login</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <div class="profile-page-wrap">
+        <!-- Back Navigation -->
+        <div class="back-nav-bar">
+            <a href="{{ url_for('doctors_directory') }}" class="btn-back-link">
+                <i class="fas fa-arrow-left"></i> Back to Specialists Directory
+            </a>
+            <span style="font-size:0.88rem;color:#94a3b8;">/ Dr. {{ doctor.username|capitalize }}</span>
+        </div>
+
+        <div class="doc-profile-layout">
+            <!-- Left Column: Details -->
+            <div class="doc-profile-main">
+                <!-- Hero Card -->
+                <div class="doc-hero-card">
+                    <div class="doc-hero-top">
+                        <div class="doc-hero-avatar-wrap">
+                            {% if doctor.profile_photo %}
+                                <img src="{{ url_for('static', filename=doctor.profile_photo) }}" alt="Dr. {{ doctor.username }}" class="doc-hero-avatar" style="object-fit:cover;">
+                            {% else %}
+                                <div class="doc-hero-avatar">
+                                    {{ doctor.username[3:5]|upper if doctor.username.startswith('dr_') else doctor.username[:2]|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="doc-hero-info">
+                            <h1>
+                                Dr. {{ doctor.username|capitalize }}
+                                <i class="fas fa-circle-check" style="color:#0066ff;font-size:1.2rem;" title="Verified Physician"></i>
+                            </h1>
+                            <div class="hero-spec-pill">
+                                <i class="fas fa-stethoscope"></i> {{ doctor.type_of_doctor or 'Senior Specialist' }}
+                            </div>
+                            <div class="doc-hospital-tag">
+                                <i class="fas fa-hospital" style="color:#0066ff;"></i> City Care Hospital & Research Institute
+                            </div>
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#b45309;padding:3px 10px;border-radius:8px;font-weight:800;font-size:0.9rem;">
+                                    <i class="fas fa-star" style="color:#f59e0b;"></i> 4.8 / 5.0
+                                </span>
+                                <span style="font-size:0.86rem;color:#64748b;font-weight:600;">(320+ Verified Reviews)</span>
+                                <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.84rem;color:#10b981;font-weight:700;">
+                                    <i class="fas fa-circle" style="font-size:0.45rem;"></i> Online for Video Call
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="doc-stat-metrics-row">
+                        <div class="stat-metric-box">
+                            <div class="stat-metric-val">{{ doctor.years_of_experience or '10+' }} Yrs</div>
+                            <div class="stat-metric-lbl">Experience</div>
+                        </div>
+                        <div class="stat-metric-box">
+                            <div class="stat-metric-val">4,800+</div>
+                            <div class="stat-metric-lbl">Consultations</div>
+                        </div>
+                        <div class="stat-metric-box">
+                            <div class="stat-metric-val" style="color:#10b981;">98%</div>
+                            <div class="stat-metric-lbl">Recommend</div>
+                        </div>
+                        <div class="stat-metric-box">
+                            <div class="stat-metric-val" style="color:#0066ff;">&lt; 5 min</div>
+                            <div class="stat-metric-lbl">Wait Time</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About Section -->
+                <div class="doc-section-card">
+                    <h2><i class="fas fa-user-doctor"></i> About Dr. {{ doctor.username|capitalize }}</h2>
+                    <p class="doc-bio-text">
+                        {{ doctor.bio or "Dr. " + (doctor.username|capitalize) + " is a renowned specialist dedicated to providing compassionate, evidence-based healthcare. With extensive clinical background and research publications, they specialize in early diagnosis, comprehensive patient management, and preventive medical strategies." }}
+                    </p>
+                    <h3 style="font-size:0.96rem;font-weight:700;color:#0f172a;margin-bottom:10px;">Specializations & Clinical Focus</h3>
+                    <div class="tag-cloud">
+                        <span class="tag-item"><i class="fas fa-check" style="color:#10b981;"></i> {{ doctor.type_of_doctor or 'General Practice' }}</span>
+                        <span class="tag-item"><i class="fas fa-check" style="color:#10b981;"></i> Preventive Health Screening</span>
+                        <span class="tag-item"><i class="fas fa-check" style="color:#10b981;"></i> Chronic Disease Management</span>
+                        <span class="tag-item"><i class="fas fa-check" style="color:#10b981;"></i> Tele-Consultation</span>
+                        <span class="tag-item"><i class="fas fa-check" style="color:#10b981;"></i> Lifestyle & Nutrition Guidance</span>
+                    </div>
+                </div>
+
+                <!-- Education & Credentials -->
+                <div class="doc-section-card">
+                    <h2><i class="fas fa-graduation-cap"></i> Education & Clinical Credentials</h2>
+                    <div class="edu-timeline-item">
+                        <div class="edu-icon-badge"><i class="fas fa-university"></i></div>
+                        <div class="edu-content">
+                            <h4>Doctor of Medicine (MD) — Cardiology & Internal Medicine</h4>
+                            <p>All India Institute of Medical Sciences (AIIMS) • 2012</p>
+                        </div>
+                    </div>
+                    <div class="edu-timeline-item">
+                        <div class="edu-icon-badge"><i class="fas fa-certificate"></i></div>
+                        <div class="edu-content">
+                            <h4>Bachelor of Medicine, Bachelor of Surgery (MBBS)</h4>
+                            <p>King George's Medical University • 2008</p>
+                        </div>
+                    </div>
+                    <div class="edu-timeline-item" style="margin-bottom:0;">
+                        <div class="edu-icon-badge"><i class="fas fa-award"></i></div>
+                        <div class="edu-content">
+                            <h4>Fellow of the Royal Society of Medicine (FRSM)</h4>
+                            <p>London, UK • 2017</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Reviews -->
+                <div class="doc-section-card">
+                    <h2><i class="fas fa-comments"></i> Verified Patient Reviews</h2>
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name">Rahul Khanna</span>
+                            <span style="color:#f59e0b;font-size:0.85rem;"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></span>
+                        </div>
+                        <p class="review-text">"Dr. {{ doctor.username|capitalize }} took time to listen to my symptoms patiently and explained the ECG and medication plan in detail. Very reassuring and professional."</p>
+                    </div>
+
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name">Sneha Patil</span>
+                            <span style="color:#f59e0b;font-size:0.85rem;"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></span>
+                        </div>
+                        <p class="review-text">"The video consultation was seamless. Prescriptions were issued in my ArogyaX Health Vault within 2 minutes of the call. Highly recommended!"</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Sticky Booking Widget -->
+            <div>
+                <div class="booking-sticky-box">
+                    <div class="fee-card-header">
+                        <div>
+                            <div style="font-size:0.8rem;color:#64748b;font-weight:700;text-transform:uppercase;">Consultation Fee</div>
+                            <div class="fee-large">₹{{ doctor.consultation_fee or '800' }}</div>
+                        </div>
+                        <span style="background:#ecfdf5;color:#059669;padding:4px 10px;border-radius:8px;font-size:0.82rem;font-weight:700;">
+                            <i class="fas fa-shield-halved"></i> 100% Refundable
+                        </span>
+                    </div>
+
+                    <div class="slot-selector-title">
+                        <span><i class="fas fa-calendar-day" style="color:#0066ff;"></i> Select Date & Time Slot</span>
+                        <span style="font-size:0.78rem;color:#10b981;font-weight:700;">Available Today</span>
+                    </div>
+
+                    <div class="slot-pill-grid" id="slotSelector">
+                        <button class="slot-btn active" onclick="setSlot(this, '10:00 AM')">10:00 AM</button>
+                        <button class="slot-btn" onclick="setSlot(this, '11:30 AM')">11:30 AM</button>
+                        <button class="slot-btn" onclick="setSlot(this, '02:00 PM')">02:00 PM</button>
+                        <button class="slot-btn" onclick="setSlot(this, '03:30 PM')">03:30 PM</button>
+                        <button class="slot-btn" onclick="setSlot(this, '05:00 PM')">05:00 PM</button>
+                        <button class="slot-btn" onclick="setSlot(this, '06:30 PM')">06:30 PM</button>
+                    </div>
+
+                    <a href="{{ url_for('book_appointment') }}?specialization={{ doctor.type_of_doctor }}" class="btn-full-action btn-book-primary">
+                        <i class="fas fa-calendar-check"></i> Book In-Clinic Appointment
+                    </a>
+
+                    <a href="{{ url_for('videocall_direct') }}" class="btn-full-action btn-video-purple">
+                        <i class="fas fa-video"></i> Start Video Consultation
+                    </a>
+
+                    <ul class="guarantee-list">
+                        <li><i class="fas fa-check-circle"></i> Instant digital prescription in Health Vault</li>
+                        <li><i class="fas fa-check-circle"></i> Free 3-day follow-up consultation</li>
+                        <li><i class="fas fa-check-circle"></i> 256-bit encrypted HD video call</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <section class="footer">
+        <div class="credit">© 2024 <span>ArogyaX</span> — "Your Health, Our Priority"</div>
+    </section>
+
+    <script>
+        function setSlot(btn, time) {
+            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>

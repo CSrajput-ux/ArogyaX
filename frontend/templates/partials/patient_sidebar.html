@@ -1,0 +1,51 @@
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-brand-icon" style="width:38px;height:38px;border-radius:11px;box-shadow:0 4px 14px rgba(0,102,255,0.25);">
+            <i class="fas fa-heart-pulse"></i>
+        </div>
+        <div>
+            <div style="font-size:1.2rem; font-weight:800; color:#0f172a; letter-spacing:-0.4px;">Arogya<span style="color:#0066ff;">X</span></div>
+            <div class="logo-sub" style="font-size:0.75rem; color:#64748b; font-weight:600;">Digital Healthcare</div>
+        </div>
+    </div>
+
+    <div class="sidebar-section">Main Menu</div>
+    <nav class="sidebar-nav">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-th-large"></i> Dashboard</a>
+        <a href="{{url_for('doctors_directory')}}" class="{% if 'doctors' in request.path %}active{% endif %}"><i class="fas fa-user-md"></i> Find Doctors</a>
+        <a href="{{url_for('disease_predict')}}" class="{% if 'disease_predict' in request.path %}active{% endif %}"><i class="fas fa-robot"></i> Symptom Checker <span class="badge-ai-pill">AI</span></a>
+        <a href="{{url_for('vault')}}" class="{% if 'vault' in request.path %}active{% endif %}"><i class="fas fa-file-medical-alt"></i> Health Records</a>
+        <a href="{{url_for('book_appointment')}}" class="{% if 'book-appointment' in request.path %}active{% endif %}"><i class="fas fa-calendar-check"></i> Book Appointment</a>
+        <a href="{{url_for('videocall_direct')}}" class="{% if 'videocall' in request.path %}active{% endif %}"><i class="fas fa-video"></i> Video Consultation</a>
+        <a href="{{url_for('order_medicines')}}" class="{% if 'order-medicines' in request.path %}active{% endif %}"><i class="fas fa-pills"></i> Order Medicines <span class="badge-new-pill">New</span></a>
+        <a href="{{url_for('medical_imaging')}}" class="{% if 'medical-imaging' in request.path %}active{% endif %}"><i class="fas fa-x-ray"></i> Reports & Scans</a>
+    </nav>
+
+    <div class="sidebar-section">AI Medical Vision</div>
+    <nav class="sidebar-nav">
+        <a href="{{url_for('braintumor')}}" class="{% if 'braintumor' in request.path %}active{% endif %}"><i class="fas fa-brain"></i> Brain MRI Scan</a>
+        <a href="{{url_for('lung')}}" class="{% if 'lung' in request.path %}active{% endif %}"><i class="fas fa-lungs"></i> Chest X-Ray</a>
+        <a href="{{url_for('cataract')}}" class="{% if 'cataract' in request.path %}active{% endif %}"><i class="fas fa-eye"></i> Cataract Eye Scan</a>
+    </nav>
+
+    <div class="sidebar-section">Health & Knowledge</div>
+    <nav class="sidebar-nav">
+        <a href="{{url_for('Transforming_Healthcare')}}"><i class="fas fa-newspaper"></i> Transforming HC</a>
+        <a href="{{url_for('Holistic_Health')}}"><i class="fas fa-spa"></i> Holistic Health</a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="avatar" style="background:linear-gradient(135deg,#0284c7,#7c3aed); color:white;">{{ username[0]|upper if username else 'P' }}</div>
+            <div class="info">
+                <div class="name">{{ username if username else 'Patient' }}</div>
+                <div class="role"><i class="fas fa-shield-alt" style="color:var(--teal); margin-right:3px;"></i> Verified Patient</div>
+            </div>
+        </div>
+        <nav class="sidebar-nav" style="margin-top:0.4rem;">
+            <a href="{{url_for('profile')}}"><i class="fas fa-cog"></i> Profile & Settings</a>
+            <a href="{{url_for('logout')}}" style="color:#ef4444 !important;"><i class="fas fa-sign-out-alt" style="color:#ef4444;"></i> Logout</a>
+        </nav>
+    </div>
+</aside>

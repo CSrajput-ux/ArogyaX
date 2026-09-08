@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cataract Detection — ArogyaX</title>
+    <link rel="icon" href="../static/images/arogyax_logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="../static/css/style.css">
+    <style>
+        body { background-color: var(--bg-base); }
+        .header-modern {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-modern .brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .ai-container {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+        }
+        .page-title {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .page-title h1 {
+            font-size: 2.2rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        .page-title p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .badge-ai {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #e0f2fe;
+            color: #0284c7;
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .upload-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+        .upload-zone {
+            border: 2px dashed var(--primary-light);
+            border-radius: var(--radius-md);
+            padding: 3rem 2rem;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #f8fafc;
+            margin-bottom: 1.5rem;
+        }
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+        .upload-zone i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        .upload-zone p {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        .upload-zone span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .btn-analyze {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 1rem 2rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+        .btn-analyze:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Gemini Panel */
+        .gemini-panel {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+        .gemini-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .gemini-icon {
+            background: linear-gradient(135deg, #4285F4, #0F9D58);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+        
+        .alert-disclaimer {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            gap: 1rem;
+            color: #92400e;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header-modern">
+        <a href="/" class="brand">
+            <img src="../static/images/arogyax_logo.png" alt="Logo" style="height:32px; border-radius:4px;">
+            ArogyaX
+        </a>
+        <div style="display:flex; align-items:center; gap:1.5rem;">
+            <a href="/medical-imaging" style="color:var(--text-secondary); font-weight:500; text-decoration:none;"><i class="fas fa-arrow-left"></i> Back to Scans</a>
+            <div style="background:#f1f5f9; padding:0.4rem 1rem; border-radius:50px; font-size:0.85rem; font-weight:600; color:var(--text-primary);">
+                <i class="fas fa-user-circle" style="color:var(--primary); margin-right:4px;"></i> {{ username }}
+            </div>
+        </div>
+    </header>
+
+    <div class="ai-container">
+        <div class="page-title">
+            <div class="badge-ai"><i class="fas fa-eye"></i> Optical Analysis</div>
+            <h1>Cataract Detection</h1>
+            <p>Upload a high-resolution image of the eye for preliminary AI analysis.</p>
+        </div>
+
+        <div class="upload-card">
+            <form action="{{url_for('cataract')}}" method="POST" enctype="multipart/form-data">
+                <div class="upload-zone" onclick="document.getElementById('scan_image').click()" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Click to select an image</p>
+                    <span>Supported formats: JPG, PNG, WEBP (Max 5MB)</span>
+                    <input type="file" id="scan_image" name="scan_image" accept="image/*" style="display:none;" onchange="previewImage(this)">
+                </div>
+                
+                <div id="imagePreviewContainer" style="display:none; margin-bottom:1.5rem;">
+                    <img id="imagePreview" style="max-width:100%; max-height:300px; border-radius:8px; border:1px solid var(--border);">
+                </div>
+
+                <button type="submit" class="btn-analyze">
+                    <i class="fas fa-microscope"></i> Analyze Image
+                </button>
+            </form>
+        </div>
+
+        {% if gemini_result %}
+        <!-- Disclaimer -->
+        <div class="alert-disclaimer">
+            <i class="fas fa-exclamation-triangle" style="font-size:1.5rem; margin-top:2px;"></i>
+            <div>
+                <strong>Important Notice:</strong> This AI-generated assessment is for educational purposes only and does NOT constitute a medical diagnosis. Please consult a qualified ophthalmologist for a clinical evaluation.
+            </div>
+        </div>
+
+        <!-- Gemini Explanation -->
+        <div class="gemini-panel">
+            <div class="gemini-header">
+                <div class="gemini-icon"><i class="fas fa-robot"></i></div>
+                <div>
+                    <h3 style="font-size:1.1rem; color:var(--text-primary); margin:0;">AI Vision Analysis</h3>
+                    <div style="font-size:0.8rem; color:var(--text-muted);">Generated by Google Gemini Vision</div>
+                </div>
+            </div>
+            <div style="color:var(--text-secondary); font-size:1rem; line-height:1.7; white-space:pre-wrap;">{{ gemini_result }}</div>
+        </div>
+        {% endif %}
+
+        {% if not gemini_enabled %}
+        <div style="background:#f1f5f9; border:1px solid var(--border); padding:1rem; border-radius:var(--radius-md); color:var(--text-muted); display:flex; align-items:center; gap:0.75rem; margin-bottom:2rem;">
+            <i class="fas fa-info-circle"></i> System Notice: Add your GEMINI_API_KEY to the environment to enable AI analysis.
+        </div>
+        {% endif %}
+
+        {% if gemini_result %}
+        <!-- Save Actions -->
+        <div style="display:flex; gap:1rem; margin-top:1.5rem; flex-wrap:wrap; margin-bottom: 2rem;">
+            <button onclick="saveAssessment()" id="saveAssessmentBtn" style="flex:1; background:white; border:2px solid var(--primary); color:var(--primary); padding:0.75rem 1rem; border-radius:var(--radius-md); font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+                <i class="fas fa-save"></i> Save Report
+            </button>
+            <a href="{{url_for('book_appointment')}}" style="flex:1; background:var(--primary); border:2px solid var(--primary); color:white; padding:0.75rem 1rem; border-radius:var(--radius-md); font-weight:600; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:0.5rem; transition:all 0.2s;">
+                <i class="fas fa-calendar-check"></i> Book Specialist Appointment
+            </a>
+            <a href="{{url_for('vault')}}" style="flex:1; background:white; border:2px solid var(--border); color:var(--text-primary); padding:0.75rem 1rem; border-radius:var(--radius-md); font-weight:600; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:0.5rem; transition:all 0.2s;">
+                <i class="fas fa-folder-open"></i> View History
+            </a>
+        </div>
+
+        <script type="application/json" id="assessmentData">
+            {{ {
+                "assessmentType": "Cataract",
+                "result": (gemini_result[:100] ~ '...') if gemini_result else '',
+                "confidence": 0,
+                "riskLevel": "UNKNOWN",
+                "recommendations": gemini_result or ''
+            } | tojson | safe }}
+        </script>
+
+        <script>
+            function saveAssessment() {
+                const btn = document.getElementById('saveAssessmentBtn');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                btn.disabled = true;
+
+                const payload = JSON.parse(document.getElementById('assessmentData').textContent);
+
+                fetch('/api/save_assessment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> Report saved successfully';
+                        btn.style.background = '#dcfce7';
+                        btn.style.color = '#166534';
+                        btn.style.borderColor = '#166534';
+                    } else {
+                        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed to save';
+                        btn.disabled = false;
+                    }
+                }).catch(err => {
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error saving';
+                    btn.disabled = false;
+                });
+            }
+        </script>
+        {% endif %}
+    </div>
+
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreviewContainer').style.display = 'block';
+                    document.getElementById('dropZone').style.display = 'none';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Symptom Assessment — ArogyaX</title>
+    <meta name="description" content="Intelligent AI symptom checker and diagnostic assessment tool powered by machine learning and Google Gemini AI.">
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .checker-wrap {
+            max-width: 1000px;
+            margin: 96px auto 60px;
+            padding: 0 20px;
+        }
+
+        /* 4-Step Indicator */
+        .step-progress-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .step-progress-row::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 40px;
+            right: 40px;
+            height: 3px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+
+        .step-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #cbd5e1;
+            color: #64748b;
+            font-size: 0.95rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .step-node.active .step-circle {
+            border-color: #0066ff;
+            background: #0066ff;
+            color: #ffffff;
+            box-shadow: 0 0 0 6px rgba(0, 102, 255, 0.15);
+        }
+
+        .step-node.completed .step-circle {
+            border-color: #10b981;
+            background: #10b981;
+            color: #ffffff;
+        }
+
+        .step-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .step-node.active .step-title {
+            color: #0066ff;
+        }
+
+        /* Hero Banner */
+        .checker-hero {
+            background: linear-gradient(135deg, #7c5cfc 0%, #0066ff 100%);
+            border-radius: 24px;
+            padding: 32px 36px;
+            color: #ffffff;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 36px rgba(124, 92, 252, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .checker-hero {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        .checker-hero h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            color: #ffffff;
+        }
+
+        .checker-hero p {
+            font-size: 0.96rem;
+            opacity: 0.92;
+            margin: 0;
+            max-width: 550px;
+            line-height: 1.5;
+        }
+
+        /* Quick Symptom Chips */
+        .quick-chips-box {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        .quick-chips-title {
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .quick-chips-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            color: #334155;
+            font-size: 0.84rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-chip:hover {
+            background: #eff6ff;
+            border-color: #0066ff;
+            color: #0066ff;
+            transform: translateY(-1px);
+        }
+
+        .quick-chip.selected {
+            background: #0066ff;
+            border-color: #0066ff;
+            color: #ffffff;
+        }
+
+        /* Form Card */
+        .symptom-form-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #edf2f7;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+            margin-bottom: 28px;
+        }
+
+        .symptom-selects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .select-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .select-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            font-size: 0.9rem;
+            color: #1e293b;
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .select-group select:focus {
+            outline: none;
+            border-color: #0066ff;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+        }
+
+        .btn-analyze-large {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0066ff 0%, #7c5cfc 100%);
+            color: #ffffff;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.25s ease;
+        }
+
+        .btn-analyze-large:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 102, 255, 0.4);
+        }
+
+        /* Disclaimer Alert */
+        .disclaimer-alert-card {
+            background: #fffbeb;
+            border: 1.5px solid #fde68a;
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 24px;
+            color: #92400e;
+        }
+
+        /* Result Cards */
+        .result-container-card {
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid #bfdbfe;
+            box-shadow: 0 12px 36px rgba(0, 102, 255, 0.08);
+            padding: 32px;
+            margin-bottom: 28px;
+        }
+
+        .result-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .condition-title-box h2 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 4px 0 0 0;
+        }
+
+        .confidence-meter-wrap {
+            margin: 20px 0;
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 16px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .confidence-bar-bg {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .confidence-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #072249, #0066ff);
+            border-radius: 999px;
+            transition: width 1s ease-in-out;
+        }
+
+        .gemini-overview-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Header -->
+    <header class="header">
+        <a href="/" class="logo">
+            <div class="logo-brand-icon">
+                <i class="fas fa-heart-pulse"></i>
+            </div>
+            <span class="brand-name">Arogya<span>X</span></span>
+        </a>
+        <nav class="navbar">
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+            <a href="{{ url_for('doctors_directory') }}"><i class="fas fa-user-md"></i> Find Doctors</a>
+            <a href="{{ url_for('order_medicines') }}"><i class="fas fa-pills"></i> Order Medicines</a>
+            <div class="user-pill">
+                <div class="avatar">{{ username[0]|upper if username else 'P' }}</div>
+                <span>{{ username or 'Patient' }}</span>
+            </div>
+        </nav>
+    </header>
+
+    <div class="checker-wrap">
+        <!-- 4-Step Indicator -->
+        <div class="step-progress-row">
+            <div class="step-node completed">
+                <div class="step-circle"><i class="fas fa-check"></i></div>
+                <span class="step-title">1. Select Symptoms</span>
+            </div>
+            <div class="step-node active">
+                <div class="step-circle">2</div>
+                <span class="step-title">2. Additional Details</span>
+            </div>
+            <div class="step-node {{ 'active' if disease else '' }}">
+                <div class="step-circle">3</div>
+                <span class="step-title">3. AI Analysis</span>
+            </div>
+            <div class="step-node {{ 'completed' if disease else '' }}">
+                <div class="step-circle">4</div>
+                <span class="step-title">4. Clinical Guidance</span>
+            </div>
+        </div>
+
+        <!-- Hero Header -->
+        <div class="checker-hero">
+            <div>
+                <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:999px;font-size:0.8rem;font-weight:700;margin-bottom:10px;">
+                    <i class="fas fa-brain"></i> Neural Network + Google Gemini AI
+                </div>
+                <h1>AI-Powered Symptom Assessment</h1>
+                <p>Input your current symptoms to receive an instant probabilistic health evaluation, risk score, and recommended medical specialist.</p>
+            </div>
+            <div style="width:70px;height:70px;border-radius:20px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;">
+                <i class="fas fa-stethoscope"></i>
+            </div>
+        </div>
+
+        <!-- Quick 1-Click Symptom Selector Chips -->
+        <div class="quick-chips-box">
+            <div class="quick-chips-title">
+                <i class="fas fa-bolt" style="color:#f59e0b;"></i> Fast Select Common Symptoms:
+            </div>
+            <div class="quick-chips-grid">
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('fever')"><i class="fas fa-plus"></i> Fever</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('headache')"><i class="fas fa-plus"></i> Headache</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('cough')"><i class="fas fa-plus"></i> Cough</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('cold')"><i class="fas fa-plus"></i> Cold</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('body_pain')"><i class="fas fa-plus"></i> Body Pain</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('stomach_pain')"><i class="fas fa-plus"></i> Stomach Pain</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('chest_pain')"><i class="fas fa-plus"></i> Chest Pain</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('fatigue')"><i class="fas fa-plus"></i> Fatigue</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('nausea')"><i class="fas fa-plus"></i> Nausea</button>
+                <button type="button" class="quick-chip" onclick="quickSelectSymptom('breathing_difficulty')"><i class="fas fa-plus"></i> Breathing Difficulty</button>
+            </div>
+        </div>
+
+        <!-- Main Symptom Form -->
+        <div class="symptom-form-card">
+            <h3 style="font-size:1.15rem;font-weight:800;color:#0f172a;margin:0 0 4px 0;">Select Up to 5 Symptoms</h3>
+            <p style="font-size:0.88rem;color:#64748b;margin:0 0 20px 0;">Our ML engine compares your selections against 130+ clinical disease patterns.</p>
+
+            <form action="{{ url_for('disease_predict') }}" method="POST">
+                <div class="symptom-selects-grid">
+                    {% for i in range(1, 6) %}
+                    <div class="select-group">
+                        <label>Symptom {{ i }}</label>
+                        <select name="Symptom{{ i }}" id="symptomSelect{{ i }}">
+                            <option value="">— Select Symptom —</option>
+                            {% for s in symptoms %}
+                            <option value="{{ s }}" {% if selected_symptoms and selected_symptoms|length >= i and selected_symptoms[i-1] == s %}selected{% endif %}>
+                                {{ s.replace('_', ' ')|title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn-analyze-large">
+                    <i class="fas fa-microchip"></i> Run AI Symptom Analysis
+                </button>
+            </form>
+        </div>
+
+        <!-- AI Medical Disclaimer -->
+        <div class="disclaimer-alert-card">
+            <i class="fas fa-triangle-exclamation" style="font-size:1.4rem;color:#d97706;margin-top:2px;"></i>
+            <div style="font-size:0.88rem;line-height:1.5;">
+                <strong>Medical Notice & AI Preliminary Guidance:</strong>
+                This AI assessment is designed for preliminary guidance only and does not replace professional medical advice, clinical examination, or laboratory testing. If experiencing acute chest pain or severe shortness of breath, please call emergency services immediately.
+            </div>
+        </div>
+
+        {% if disease %}
+        <!-- Analysis Results Section -->
+        <div class="result-container-card">
+            <div class="result-top-row">
+                <div class="condition-title-box">
+                    <span style="font-size:0.8rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#0066ff;">
+                        <i class="fas fa-clipboard-check"></i> Preliminary ML Assessment
+                    </span>
+                    <h2>{{ disease }}</h2>
+                </div>
+                {% set risk_level = 'Moderate' if confidence_score and confidence_score > 70 else 'Low' %}
+                <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:0.85rem;font-weight:800;background:#dbeafe;color:#1d4ed8;">
+                    <i class="fas fa-shield-halved"></i> Risk Level: {{ risk_level }}
+                </div>
+            </div>
+
+            <!-- Confidence Bar -->
+            <div class="confidence-meter-wrap">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.9rem;font-weight:700;color:#334155;">
+                    <span><i class="fas fa-chart-line" style="color:#0066ff;"></i> Algorithm Confidence</span>
+                    <span style="color:#0066ff;font-size:1.1rem;font-weight:800;">{{ "%.1f"|format(confidence_score) }}%</span>
+                </div>
+                <div class="confidence-bar-bg">
+                    <div class="confidence-bar-fill" style="width: {{ [confidence_score, 100]|min }}%;"></div>
+                </div>
+            </div>
+
+            <!-- Suggested Specialist Guidance -->
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:16px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:44px;height:44px;border-radius:12px;background:#0066ff;color:#ffffff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+                        <i class="fas fa-user-doctor"></i>
+                    </div>
+                    <div>
+                        <strong style="font-size:0.95rem;color:#0f172a;">Recommended Next Step:</strong>
+                        <p style="font-size:0.85rem;color:#475569;margin:2px 0 0;">Consult a specialist for clinical examination and prescription guidance.</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('doctors_directory') }}" class="btn btn-primary" style="padding:8px 18px;font-size:0.88rem;font-weight:700;">
+                    <i class="fas fa-stethoscope"></i> Find Specialist Doctor
+                </a>
+            </div>
+
+            {% if gemini_explanation %}
+            <!-- Gemini Clinical Overview -->
+            <div class="gemini-overview-card">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:10px;">
+                    <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg, #4285F4, #0F9D58);color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.9rem;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <strong style="font-size:0.95rem;color:#0f172a;">Google Gemini Clinical Summary</strong>
+                        <span style="font-size:0.75rem;color:#64748b;display:block;">Plain-language medical explanation & home care tips</span>
+                    </div>
+                </div>
+                <div style="font-size:0.94rem;color:#334155;line-height:1.7;white-space:pre-wrap;">{{ gemini_explanation }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Save and Vault Actions -->
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">
+                <button onclick="saveAssessment()" id="saveAssessmentBtn" class="btn" style="flex:1;background:#ffffff;border:2px solid #0066ff;color:#0066ff;padding:12px;border-radius:12px;font-weight:800;cursor:pointer;">
+                    <i class="fas fa-floppy-disk"></i> Save to Health Records
+                </button>
+                <a href="{{ url_for('book_appointment') }}" class="btn btn-primary" style="flex:1;padding:12px;border-radius:12px;font-weight:800;text-align:center;">
+                    <i class="fas fa-calendar-check"></i> Book Doctor Visit
+                </a>
+                <a href="{{ url_for('videocall_direct') }}" class="btn" style="flex:1;background:linear-gradient(135deg, #7c5cfc, #6366f1);color:#fff;padding:12px;border-radius:12px;font-weight:800;text-align:center;">
+                    <i class="fas fa-video"></i> Instant Video Consult
+                </a>
+            </div>
+        </div>
+
+        <script type="application/json" id="assessmentData">
+            {{ {
+                "assessmentType": "Symptoms",
+                "symptoms": selected_symptoms or [],
+                "result": disease or "",
+                "confidence": confidence_score or 0,
+                "riskLevel": "Moderate",
+                "recommendations": gemini_explanation or ""
+            } | tojson | safe }}
+        </script>
+
+        <script>
+            function saveAssessment() {
+                const btn = document.getElementById('saveAssessmentBtn');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving to Vault...';
+                btn.disabled = true;
+
+                const payload = JSON.parse(document.getElementById('assessmentData').textContent);
+
+                fetch('/api/save_assessment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> Saved to Medical Vault!';
+                        btn.style.background = '#ecfdf5';
+                        btn.style.color = '#059669';
+                        btn.style.borderColor = '#059669';
+                    } else {
+                        btn.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Failed to save';
+                        btn.disabled = false;
+                    }
+                }).catch(err => {
+                    btn.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Error saving';
+                    btn.disabled = false;
+                });
+            }
+        </script>
+        {% endif %}
+    </div>
+
+    <!-- Client Script for Quick Symptom Filling -->
+    <script>
+        function quickSelectSymptom(symptomKeyword) {
+            const selects = [
+                document.getElementById('symptomSelect1'),
+                document.getElementById('symptomSelect2'),
+                document.getElementById('symptomSelect3'),
+                document.getElementById('symptomSelect4'),
+                document.getElementById('symptomSelect5')
+            ];
+
+            for (let select of selects) {
+                if (!select.value) {
+                    const options = Array.from(select.options);
+                    const match = options.find(opt => opt.value.toLowerCase().includes(symptomKeyword.toLowerCase()));
+                    if (match) {
+                        select.value = match.value;
+                        break;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
