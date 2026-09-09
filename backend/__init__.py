@@ -49,13 +49,15 @@ def create_app(config_class=Config):
     from backend.routes.ai_routes import ai_bp
     from backend.routes.admin_routes import admin_bp
     from backend.routes.blog_routes import blog_bp
-    
+    from backend.routes.clinical_routes import clinical_bp
+
     app.register_blueprint(patient_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(doctor_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(blog_bp)
+    app.register_blueprint(clinical_bp)
     
     # Context Processor for seamless backward-compatible url_for resolution
     @app.context_processor
@@ -64,7 +66,7 @@ def create_app(config_class=Config):
             try:
                 return url_for(endpoint, **values)
             except Exception:
-                for prefix in ['patient', 'auth', 'doctor', 'ai', 'admin', 'blog']:
+                for prefix in ['patient', 'auth', 'doctor', 'ai', 'admin', 'blog', 'clinical']:
                     try:
                         return url_for(f"{prefix}.{endpoint}", **values)
                     except Exception:

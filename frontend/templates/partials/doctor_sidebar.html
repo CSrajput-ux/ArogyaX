@@ -11,10 +11,23 @@
     </div>
     <div class="sidebar-section">Clinical Hub</div>
     <nav class="sidebar-nav">
-        <a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="{{url_for('doctor_patients')}}" class="{% if 'doctor-patients' in request.path %}active{% endif %}"><i class="fas fa-user-injured"></i> My Patients</a>
-        <a href="{{url_for('videocall_direct')}}" class="{% if 'videocall' in request.path %}active{% endif %}"><i class="fas fa-video"></i> Video Consult</a>
-        <a href="{{url_for('doctor_profile_edit')}}" class="{% if 'doctor-profile-edit' in request.path %}active{% endif %}"><i class="fas fa-user-md"></i> Practice Profile</a>
+        <a href="{{ url_for('clinical.doctor_dashboard') }}" class="nav-item {% if request.endpoint == 'clinical.doctor_dashboard' %}active{% endif %}">
+            <i class="fas fa-home"></i> Dashboard
+        </a>
+        
+        <div class="nav-section-title">CLINICAL WORKSPACE</div>
+        
+        <a href="{{ url_for('clinical.my_patients') }}" class="nav-item {% if request.endpoint == 'clinical.my_patients' %}active{% endif %}">
+            <i class="fas fa-users"></i> My Patients
+        </a>
+        
+        <a href="{{ url_for('clinical.clinical_cases') }}" class="nav-item {% if request.endpoint == 'clinical.clinical_cases' %}active{% endif %}">
+            <i class="fas fa-notes-medical"></i> Clinical Cases
+        </a>
+        
+        <a href="{{ url_for('clinical.doctor_prescriptions') }}" class="nav-item {% if request.endpoint == 'clinical.doctor_prescriptions' %}active{% endif %}">
+            <i class="fas fa-file-prescription"></i> Prescriptions
+        </a>
     </nav>
     <div class="sidebar-section">AI Diagnostic Suite</div>
     <nav class="sidebar-nav">
@@ -41,3 +54,168 @@
         </nav>
     </div>
 </aside>
+
+<!-- INCOMING LIVE CALL ALERT MODAL (Dr. Priya Sharma & Specialists) -->
+<div id="incomingCallModal" style="display:none; position:fixed; top:24px; right:24px; z-index:99999; animation:slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div style="background:#ffffff; width:360px; border-radius:20px; box-shadow:0 20px 50px rgba(15,23,42,0.25), 0 0 0 1px rgba(16,185,129,0.3); border:2px solid #10b981; overflow:hidden; position:relative;">
+        <!-- Glowing Top Bar -->
+        <div style="background:linear-gradient(135deg, #059669, #10b981); color:#ffffff; padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:inline-flex; align-items:center; gap:8px; font-size:0.82rem; font-weight:800; letter-spacing:0.3px;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#ffffff; animation:ringDotPulse 1s infinite alternate;"></span>
+                INCOMING TELEHEALTH CALL
+            </div>
+            <span style="font-size:0.75rem; background:rgba(255,255,255,0.25); padding:2px 8px; border-radius:999px; font-weight:700;">Live</span>
+        </div>
+
+        <div style="padding:20px 20px 18px; text-align:center;">
+            <div style="position:relative; width:68px; height:68px; margin:0 auto 12px;">
+                <div id="ringingAvatarPulse" style="position:absolute; inset:0; border-radius:50%; background:rgba(16,185,129,0.25); animation:avatarPulse 1.4s infinite;"></div>
+                <div style="position:relative; width:68px; height:68px; border-radius:50%; background:linear-gradient(135deg, #0066ff, #7c5cfc); color:#ffffff; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:800; box-shadow:0 6px 18px rgba(0,102,255,0.35);">
+                    <i class="fas fa-video"></i>
+                </div>
+            </div>
+
+            <h4 id="incomingCallerName" style="margin:0 0 4px 0; font-size:1.15rem; font-weight:800; color:#0f172a;">Patient Calling...</h4>
+            <p id="incomingCallReason" style="margin:0 0 16px 0; font-size:0.84rem; color:#64748b; font-weight:600;">Requesting HD Video Consultation</p>
+
+            <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:10px;">
+                <button type="button" onclick="respondToCall('decline')" style="background:#f1f5f9; color:#ef4444; border:1px solid #fee2e2; border-radius:12px; padding:11px 14px; font-weight:700; font-size:0.88rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:inherit;">
+                    <i class="fas fa-phone-slash"></i> Decline
+                </button>
+                <button type="button" onclick="respondToCall('accept')" style="background:linear-gradient(135deg, #10b981, #059669); color:#ffffff; border:none; border-radius:12px; padding:11px 16px; font-weight:800; font-size:0.9rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 6px 16px rgba(16,185,129,0.35); font-family:inherit;">
+                    <i class="fas fa-video"></i> Accept Call
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes slideInRight {
+    from { transform: translateX(110%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes avatarPulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.35); opacity: 0.2; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+@keyframes ringDotPulse {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+}
+</style>
+
+<script>
+    // Live Incoming Call Listener & Signaling Script
+    let activeCallSession = null;
+    let audioContext = null;
+    let ringInterval = null;
+
+    function playTone() {
+        try {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = 'sine';
+            // Hospital Telehealth Dual Chime
+            osc.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.16); // E5
+            gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.45);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.45);
+        } catch (e) {
+            // Browser autoplay restrictions handled gracefully
+        }
+    }
+
+    function startRingtone() {
+        playTone();
+        if (!ringInterval) {
+            ringInterval = setInterval(playTone, 1800);
+        }
+    }
+
+    function stopRingtone() {
+        if (ringInterval) {
+            clearInterval(ringInterval);
+            ringInterval = null;
+        }
+    }
+
+    function showIncomingCall(data) {
+        activeCallSession = data;
+        const modal = document.getElementById('incomingCallModal');
+        const callerNameEl = document.getElementById('incomingCallerName');
+        const reasonEl = document.getElementById('incomingCallReason');
+        
+        if (callerNameEl) callerNameEl.textContent = data.caller_name || 'Patient';
+        if (reasonEl && data.reason) reasonEl.textContent = data.reason;
+        
+        if (modal) modal.style.display = 'block';
+        startRingtone();
+    }
+
+    function hideIncomingCall() {
+        const modal = document.getElementById('incomingCallModal');
+        if (modal) modal.style.display = 'none';
+        stopRingtone();
+        activeCallSession = null;
+    }
+
+    function respondToCall(action) {
+        if (!activeCallSession) return;
+        const callId = activeCallSession.call_id;
+        const roomUrl = activeCallSession.room_url || '/videocall';
+        stopRingtone();
+
+        fetch('/api/call/respond', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ call_id: callId, action: action })
+        })
+        .then(r => r.json())
+        .then(res => {
+            hideIncomingCall();
+            if (action === 'accept') {
+                window.location.href = res.room_url || roomUrl;
+            }
+        })
+        .catch(err => {
+            hideIncomingCall();
+            if (action === 'accept') {
+                window.location.href = roomUrl;
+            }
+        });
+    }
+
+    // Polling function: checks for incoming calls every 2.5s
+    function pollIncomingCall() {
+        fetch('/api/call/check-incoming')
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.has_incoming && data.call_id) {
+                    if (!activeCallSession || activeCallSession.call_id !== data.call_id) {
+                        showIncomingCall(data);
+                    }
+                } else {
+                    if (activeCallSession) {
+                        hideIncomingCall();
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setInterval(pollIncomingCall, 2500);
+    });
+</script>

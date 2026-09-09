@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Cases — ArogyaX</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="dashboard-layout">
+        {% include 'partials/doctor_sidebar.html' %}
+        
+        <main class="dashboard-main">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                <div>
+                    <h2 style="margin:0; font-weight:800; color:#0f172a; font-size:1.6rem;">All Clinical Cases</h2>
+                    <p style="margin:4px 0 0; color:#64748b; font-size:0.9rem;">Consultation cases matching your specialty</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar" style="display:flex; gap:16px; background:#ffffff; padding:16px; border-radius:16px; border:1px solid #e2e8f0; margin-bottom:24px;">
+                <form action="{{ url_for('clinical.clinical_cases') }}" method="GET" style="display:flex; gap:16px; width:100%;">
+                    <div style="flex:1; position:relative;">
+                        <i class="fas fa-search" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#94a3b8;"></i>
+                        <input type="text" name="search" value="{{ search }}" placeholder="Search by Patient Name or Case ID" style="width:100%; padding:10px 16px 10px 42px; border:1px solid #cbd5e1; border-radius:10px; font-family:inherit;">
+                    </div>
+                    <div>
+                        <select name="status" style="padding:10px 16px; border:1px solid #cbd5e1; border-radius:10px; font-family:inherit; background:#f8fafc;">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Cases</option>
+                            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending Approval</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active / Open</option>
+                            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed / Prescribed</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="border-radius:10px; padding:10px 20px;">Filter</button>
+                </form>
+            </div>
+
+            <!-- Cases Table -->
+            <div class="dash-section">
+                {% if cases %}
+                <div class="appt-table-wrap">
+                    <table class="appt-table">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Patient Name</th>
+                                <th>Date Started</th>
+                                <th>Diagnosis</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in cases %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight:800; color:#0f52ab;">{{ case.case_id }}</div>
+                                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">{{ case.specialty }}</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight:700; color:#0f172a;">{{ case.patient_name }}</div>
+                                </td>
+                                <td style="font-size:0.85rem; color:#334155;">
+                                    {% if case.created_at and case.created_at is string %}
+                                        {{ case.created_at[:10] }}
+                                    {% elif case.created_at %}
+                                        {{ case.created_at.strftime('%Y-%m-%d') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if case.diagnosis %}
+                                    <span style="background:#f1f5f9; color:#334155; padding:4px 8px; border-radius:6px; font-size:0.8rem; font-weight:700;">{{ case.diagnosis }}</span>
+                                    {% else %}
+                                    <span style="color:#94a3b8; font-size:0.85rem; font-style:italic;">Pending evaluation</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if case.status == 'Pending' %}
+                                        <span class="badge badge-pending"><i class="fas fa-hourglass-half"></i> Pending</span>
+                                    {% elif case.status == 'Active' %}
+                                        <span class="badge" style="background:#eff6ff; color:#0066ff;"><i class="fas fa-pen"></i> Active Draft</span>
+                                    {% elif case.status == 'Completed' %}
+                                        <span class="badge badge-approved"><i class="fas fa-check-circle"></i> Completed</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align:right;">
+                                    <div style="display:inline-flex; gap:6px;">
+                                        <a href="{{ url_for('clinical.open_case', case_id=case.case_id) }}" class="btn-xs" style="background:#0f52ab; color:#fff; border-radius:8px; padding:6px 12px; font-weight:700;">
+                                            <i class="fas fa-folder-open"></i> Open Case
+                                        </a>
+                                        {% if case.prescription_id %}
+                                        <a href="{{ url_for('clinical.download_rx', rx_id=case.prescription_id) }}" class="btn-xs" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px;" title="View Prescription">
+                                            <i class="fas fa-file-prescription" style="color:#7c5cfc;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state" style="padding:48px 24px;text-align:center;">
+                    <i class="fas fa-folder-open" style="font-size:3rem;color:#cbd5e1;margin-bottom:14px;display:block;"></i>
+                    <h4 style="font-size:1.1rem;font-weight:800;color:#334155;margin:0 0 6px 0;">No Cases Found</h4>
+                    <p style="color:#94a3b8;font-size:0.9rem;margin:0;">No clinical cases match your filter criteria.</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

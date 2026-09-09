@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Profile: {{ patient.username }} — ArogyaX</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #0f172a, #334155);
+            border-radius: 20px;
+            padding: 30px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px rgba(15,23,42,0.1);
+        }
+        .patient-big-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #0f52ab, #7c5cfc);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .profile-content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        @media(max-width: 1024px) {
+            .profile-content-grid { grid-template-columns: 1fr; }
+        }
+        
+        .clinical-section {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 15px rgba(15,23,42,0.02);
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .timeline { position: relative; padding-left: 20px; }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e2e8f0;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 24px;
+        }
+        .timeline-icon {
+            position: absolute;
+            left: -29px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0066ff;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            border: 3px solid #fff;
+        }
+        .timeline-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 12px;
+        }
+        .timeline-date {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .timeline-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        
+        .tag-pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #475569;
+            margin: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        {% include 'partials/doctor_sidebar.html' %}
+        
+        <main class="dashboard-main">
+            <a href="javascript:history.back()" style="color:#64748b; text-decoration:none; font-weight:600; font-size:0.9rem; margin-bottom:16px; display:inline-block;"><i class="fas fa-arrow-left"></i> Back</a>
+            
+            <div class="profile-header">
+                <div class="patient-big-avatar">{{ patient.username[0]|upper }}</div>
+                <div>
+                    <h2 style="margin:0; font-weight:800; font-size:1.8rem; margin-bottom:6px;">{{ patient.username }}</h2>
+                    <div style="display:flex; gap:16px; font-size:0.95rem; opacity:0.9;">
+                        <span><i class="fas fa-calendar"></i> {{ patient.age or 'N/A' }} yrs</span>
+                        <span><i class="fas fa-tint" style="color:#ef4444;"></i> {{ patient.blood_group or 'N/A' }}</span>
+                        <span><i class="fas fa-phone"></i> {{ patient.phone_number or 'N/A' }}</span>
+                    </div>
+                </div>
+                {% if current_case %}
+                <div style="margin-left:auto; text-align:right;">
+                    <div style="font-size:0.8rem; text-transform:uppercase; font-weight:700; opacity:0.8;">Active Case</div>
+                    <div style="font-size:1.2rem; font-weight:800;">{{ current_case.case_id }}</div>
+                    <a href="{{ url_for('clinical.open_case', case_id=current_case.case_id) }}" class="btn-xs" style="background:rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:6px 12px; font-weight:700; margin-top:8px; display:inline-block;">Open Case Form</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="profile-content-grid">
+                <!-- Left Column -->
+                <div>
+                    <div class="clinical-section">
+                        <h3 class="section-title"><i class="fas fa-history" style="color:#0f52ab;"></i> Clinical History (Your Specialty)</h3>
+                        {% if all_cases %}
+                        <div class="timeline">
+                            {% for c in all_cases %}
+                            <div class="timeline-item">
+                                <div class="timeline-icon"><i class="fas fa-stethoscope"></i></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-date">
+                                    {% if c.created_at and c.created_at is string %}
+                                        {{ c.created_at[:10] }}
+                                    {% elif c.created_at %}
+                                        {{ c.created_at.strftime('%Y-%m-%d') }}
+                                    {% endif %}
+                                     • Case ID: {{ c.case_id }}</div>
+                                    <div class="timeline-title">Consultation: {{ c.diagnosis or c.chief_complaint }}</div>
+                                    {% if c.status == 'Completed' %}
+                                        <div style="margin-top:6px;"><span class="tag-pill" style="background:#ecfdf5; color:#059669;">Completed</span></div>
+                                    {% else %}
+                                        <div style="margin-top:6px;"><span class="tag-pill" style="background:#eff6ff; color:#0066ff;">{{ c.status }}</span></div>
+                                    {% endif %}
+                                    <a href="{{ url_for('clinical.open_case', case_id=c.case_id) }}" style="font-size:0.8rem; font-weight:700; color:#0f52ab; text-decoration:none; margin-top:8px; display:inline-block;">View Full Case &rarr;</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p style="color:#64748b; font-size:0.9rem;">No past consultations found in your specialty for this patient.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <div class="clinical-section">
+                        <h3 class="section-title"><i class="fas fa-file-prescription" style="color:#10b981;"></i> Prescriptions</h3>
+                        {% if prescriptions %}
+                            {% for rx in prescriptions %}
+                            <div style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:700; color:#0f172a; font-size:0.9rem;">{{ rx.diagnosis }}</div>
+                                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">{{ rx.created_at.strftime('%Y-%m-%d') if rx.created_at and not rx.created_at is string else rx.created_at[:10] }}</div>
+                                </div>
+                                <a href="{{ url_for('clinical.download_rx', rx_id=rx.rx_id) }}" style="color:#ef4444;" title="Download PDF"><i class="fas fa-file-pdf fa-lg"></i></a>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="color:#64748b; font-size:0.9rem;">No prescriptions issued yet.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="clinical-section">
+                        <h3 class="section-title"><i class="fas fa-robot" style="color:#7c5cfc;"></i> Recent AI Insights</h3>
+                        {% if ai_assessments %}
+                            {% for ai in ai_assessments[:3] %}
+                            <div style="padding:12px; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:10px; margin-bottom:12px;">
+                                <div style="font-size:0.75rem; font-weight:800; color:#5b21b6; margin-bottom:4px; text-transform:uppercase;">{{ ai.assessmentType }}</div>
+                                <div style="font-size:0.85rem; color:#4c1d95; line-height:1.4;">{{ ai.result[:80] }}...</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="color:#64748b; font-size:0.9rem;">No AI assessments found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -386,6 +386,49 @@
                 </div>
                 {% endfor %}
 
+                <!-- Doctor Prescriptions -->
+                {% if doctor_prescriptions %}
+                {% for rx in doctor_prescriptions %}
+                <div class="vault-card" data-category="Prescription" data-title="Doctor Prescription" data-text="{{ rx.diagnosis }}">
+                    <div>
+                        <div class="vault-card-header">
+                            <div class="vault-card-icon" style="background:#ccfbf1;color:#0f766e;"><i class="fas fa-file-prescription"></i></div>
+                            <div style="flex:1;">
+                                <h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin:0 0 2px 0;">Prescription</h3>
+                                <div style="font-size:0.78rem;color:#94a3b8;"><i class="fas fa-calendar-alt"></i> 
+                                    {% if rx.created_at and rx.created_at is string %}
+                                        {{ rx.created_at[:10] }}
+                                    {% elif rx.created_at %}
+                                        {{ rx.created_at.strftime('%Y-%m-%d') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span style="font-size:0.72rem;background:#ecfdf5;color:#059669;padding:3px 8px;border-radius:999px;font-weight:800;">Digital Rx</span>
+                        </div>
+
+                        <div class="vault-card-body">
+                            <div style="margin-bottom:6px;"><strong>Doctor:</strong> {{ rx.doctor_name or 'Doctor' }}</div>
+                            <div style="margin-bottom:6px;"><strong>Advice:</strong> {{ rx.advice[:60] }}{% if rx.advice|length > 60 %}...{% endif %}</div>
+                        </div>
+                    </div>
+
+                    <div class="vault-card-actions">
+                        <button class="btn-card-view" onclick="openDetailsModal(this)"
+                            data-title="Digital Prescription"
+                            data-result="Medicines:&#10;{{ rx.medicines }}&#10;&#10;Advice:&#10;{{ rx.advice }}"
+                            data-recommendations="Follow the dosage carefully as prescribed by {{ rx.doctor_name }}."><i class="fas fa-eye"></i> View Details</button>
+                        {% if rx.pdf_file %}
+                        <a href="{{ url_for('static', filename=rx.pdf_file) }}" target="_blank"
+                            class="btn-card-view" style="background:#eff6ff;color:#0066ff;border-color:#bfdbfe;"><i
+                                class="fas fa-download"></i> PDF</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% endif %}
+
                 <!-- Uploaded Vault Files -->
                 {% if user.records %}
                 {% for record in user.records|reverse %}

@@ -131,10 +131,34 @@ def doctor_profile_edit():
             'bio': sanitize_text(request.form.get('bio', ''), max_len=1000),
             'years_of_experience': max(0, min(60, years_exp)),
             'consultation_fee': max(0, min(50000, consult_fee)),
-            'availability': sanitize_text(request.form.get('availability', '')),
             'phone': sanitize_text(request.form.get('phone', '')),
             'email': sanitize_text(request.form.get('email', user['email'])),
+            'city': sanitize_text(request.form.get('city', '')),
+            'consultation_type': request.form.getlist('consultation_type'),
+            'availability': {
+                'Monday': sanitize_text(request.form.get('avail_monday', '')),
+                'Tuesday': sanitize_text(request.form.get('avail_tuesday', '')),
+                'Wednesday': sanitize_text(request.form.get('avail_wednesday', '')),
+                'Thursday': sanitize_text(request.form.get('avail_thursday', '')),
+                'Friday': sanitize_text(request.form.get('avail_friday', '')),
+                'Saturday': sanitize_text(request.form.get('avail_saturday', ''))
+            }
         }
+        
+        # Location / Geospatial Data
+        lat_str = request.form.get('latitude')
+        lng_str = request.form.get('longitude')
+        if lat_str and lng_str:
+            try:
+                lat = float(lat_str)
+                lng = float(lng_str)
+                updates['location'] = {
+                    "type": "Point",
+                    "coordinates": [lng, lat]
+                }
+            except ValueError:
+                pass
+                
         if request.form.get('type_of_doctor'):
             updates['type_of_doctor'] = sanitize_text(request.form.get('type_of_doctor'))
 

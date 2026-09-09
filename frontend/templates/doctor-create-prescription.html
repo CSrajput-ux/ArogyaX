@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Issue Prescription — ArogyaX</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/arogyax_logo.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .rx-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 30px rgba(15,23,42,0.04);
+            overflow: hidden;
+        }
+        .rx-header {
+            background: linear-gradient(135deg, #0f52ab, #0066ff);
+            padding: 30px 40px;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rx-body { padding: 40px; }
+        
+        .medicine-entry {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .remove-med-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #ef4444;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #0066ff;
+            box-shadow: 0 0 0 3px rgba(0,102,255,0.1);
+        }
+        .rx-symbol {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0066ff;
+            margin-bottom: 20px;
+            font-family: serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        {% include 'partials/doctor_sidebar.html' %}
+        
+        <main class="dashboard-main">
+            <a href="{{ url_for('clinical.open_case', case_id=case.case_id) }}" style="color:#64748b; text-decoration:none; font-weight:600; font-size:0.9rem; margin-bottom:16px; display:inline-block;"><i class="fas fa-arrow-left"></i> Back to Case</a>
+            
+            <div class="rx-wrapper">
+                <div class="rx-header">
+                    <div>
+                        <h2 style="margin:0; font-weight:800; font-size:1.8rem;">Digital Prescription</h2>
+                        <div style="opacity:0.9; margin-top:6px;">Case ID: {{ case.case_id }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; font-size:1.2rem;">{{ doctor.hospital_name or 'ArogyaX Clinic' }}</div>
+                        <div style="opacity:0.9; font-size:0.9rem;">Dr. {{ doctor.username }} • {{ doctor.type_of_doctor }}</div>
+                    </div>
+                </div>
+                
+                <div class="rx-body">
+                    <!-- Patient Info Bar -->
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #f1f5f9; padding-bottom:16px; margin-bottom:30px;">
+                        <div>
+                            <div style="color:#64748b; font-size:0.85rem; font-weight:700; text-transform:uppercase;">Patient Name</div>
+                            <div style="font-weight:800; font-size:1.1rem; color:#0f172a;">{{ patient.username or case.patient_name }}</div>
+                        </div>
+                        <div>
+                            <div style="color:#64748b; font-size:0.85rem; font-weight:700; text-transform:uppercase;">Age / Gender</div>
+                            <div style="font-weight:700; font-size:1rem; color:#0f172a;">{{ patient.age or 'N/A' }} / {{ patient.gender or 'N/A' }}</div>
+                        </div>
+                        <div>
+                            <div style="color:#64748b; font-size:0.85rem; font-weight:700; text-transform:uppercase;">Date</div>
+                            <div style="font-weight:700; font-size:1rem; color:#0f172a;" id="currentDate"></div>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('clinical.create_prescription', case_id=case.case_id) }}" method="POST" enctype="multipart/form-data">
+                        <div style="margin-bottom:24px;">
+                            <label style="font-weight:700; color:#334155; display:block; margin-bottom:8px;">Confirmed Diagnosis <span style="color:#ef4444;">*</span></label>
+                            <input type="text" name="diagnosis" class="form-control" value="{{ case.diagnosis }}" style="font-size:1.1rem; font-weight:700; color:#0f52ab;" required>
+                        </div>
+                        
+                        <!-- Upload Existing Scanned Prescription Option -->
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:18px; margin-bottom:28px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label style="font-weight:700; color:#334155; font-size:0.92rem; margin:0;">
+                                    <i class="fas fa-file-arrow-up" style="color:#0066ff; margin-right:6px;"></i> Attach Physical / Scanned Prescription Document (Optional)
+                                </label>
+                                <span style="font-size:0.75rem; color:#0f52ab; background:#dbeafe; padding:3px 8px; border-radius:6px; font-weight:700;">PDF or Image</span>
+                            </div>
+                            <p style="font-size:0.82rem; color:#64748b; margin:0 0 10px 0;">Upload handwritten Rx or lab-signed document to attach directly to the patient's Health Vault.</p>
+                            <input type="file" name="prescription_file" accept=".pdf,image/*" class="form-control" style="background:#ffffff; padding:8px 12px; font-size:0.88rem;">
+                        </div>
+
+                        <div class="rx-symbol">Rx</div>
+                        
+                        <div id="medicine-container">
+                            <!-- JS Will insert medicine rows here -->
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline" onclick="addMedicine()" style="margin-bottom:40px; font-weight:700; border-radius:8px; border-style:dashed; width:100%;">
+                            <i class="fas fa-plus-circle"></i> Add Medicine
+                        </button>
+
+                        <div style="margin-bottom:30px;">
+                            <label style="font-weight:700; color:#334155; display:block; margin-bottom:8px;">Clinical Advice / Diet / Exercises</label>
+                            <textarea name="advice_notes" class="form-control" rows="4" placeholder="Rest, hydration, dietary restrictions..."></textarea>
+                        </div>
+                        
+                        <div style="margin-bottom:40px;">
+                            <label style="font-weight:700; color:#334155; display:block; margin-bottom:8px;">Follow-up Date</label>
+                            <input type="date" name="follow_up_date" class="form-control" style="width:250px;">
+                        </div>
+                        
+                        <div style="display:flex; justify-content:flex-end; gap:16px; border-top:1px solid #e2e8f0; padding-top:24px;">
+                            <button type="submit" name="action" value="save" class="btn btn-outline" style="font-weight:700; padding:12px 24px;">
+                                <i class="fas fa-save"></i> Save Draft
+                            </button>
+                            <button type="submit" name="action" value="send" class="btn btn-primary" style="font-weight:700; padding:12px 30px; background:linear-gradient(135deg, #0066ff, #0f52ab);">
+                                <i class="fas fa-paper-plane"></i> Finalize & Send to Patient Vault
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Datalist for medicine autocomplete -->
+    <datalist id="meds-list">
+        {% for med in available_medicines %}
+        <option value="{{ med }}">
+        {% endfor %}
+    </datalist>
+
+    <script>
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        function addMedicine() {
+            const container = document.getElementById('medicine-container');
+            const medEntry = document.createElement('div');
+            medEntry.className = 'medicine-entry';
+            medEntry.innerHTML = `
+                <button type="button" class="remove-med-btn" onclick="this.parentElement.remove()"><i class="fas fa-times-circle"></i></button>
+                <div class="form-row">
+                    <div style="grid-column: span 2;">
+                        <label style="font-size:0.8rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">Medicine Name *</label>
+                        <input type="text" name="medicine_name[]" class="form-control" list="meds-list" placeholder="e.g. Paracetamol 500mg" required>
+                    </div>
+                    <div>
+                        <label style="font-size:0.8rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">Dosage</label>
+                        <input type="text" name="dosage[]" class="form-control" placeholder="e.g. 1 Tablet">
+                    </div>
+                    <div>
+                        <label style="font-size:0.8rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">Duration</label>
+                        <input type="text" name="duration[]" class="form-control" placeholder="e.g. 5 Days">
+                    </div>
+                </div>
+                <div class="form-row" style="margin-bottom:0;">
+                    <div style="grid-column: span 2;">
+                        <label style="font-size:0.8rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">Frequency / Timing</label>
+                        <select name="frequency[]" class="form-control">
+                            <option value="">Select Timing</option>
+                            <option value="1-0-0 (Morning)">1-0-0 (Morning)</option>
+                            <option value="1-0-1 (Morning & Night)">1-0-1 (Morning & Night)</option>
+                            <option value="1-1-1 (Thrice a day)">1-1-1 (Thrice a day)</option>
+                            <option value="0-0-1 (Night)">0-0-1 (Night)</option>
+                            <option value="SOS (As needed)">SOS (As needed)</option>
+                            <option value="Once a week">Once a week</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="font-size:0.8rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">Instructions</label>
+                        <input type="text" name="instructions[]" class="form-control" placeholder="e.g. After food">
+                    </div>
+                </div>
+            `;
+            container.appendChild(medEntry);
+        }
+        
+        // Add one empty row on load
+        addMedicine();
+    </script>
+</body>
+</html>

@@ -19,7 +19,7 @@
             <div class="dash-header">
                 <div>
                     <h1>My Patients</h1>
-                    <p>All appointments assigned to Dr. {{ username }} — {{ doctor.type_of_doctor }}</p>
+                    <p>All appointments assigned to Dr. {{ username or (doctor.username if doctor else 'Doctor') }} — {{ doctor.type_of_doctor if doctor else 'Specialist' }}</p>
                 </div>
             </div>
 

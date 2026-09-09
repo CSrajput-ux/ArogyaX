@@ -16,8 +16,10 @@
     <div class="auth-wrapper">
         <div class="auth-left">
             <div class="brand">
-                <img src="../static/images/arogyax_logo.png" alt="ArogyaX">
-                <span>ArogyaX</span>
+                <div class="logo-brand-icon" style="width:42px; height:42px; border-radius:12px; font-size:1.3rem;">
+                    <i class="fas fa-heart-pulse"></i>
+                </div>
+                <span>Arogya<span style="color:var(--primary);">X</span></span>
             </div>
             <h2>Join as a <span>Doctor</span></h2>
             <p>Register as a specialist doctor on ArogyaX. Manage appointments, issue e-prescriptions, and care
@@ -61,6 +63,29 @@
                     <div class="input-icon">
                         <i class="fas fa-stethoscope"></i>
                         <input type="text" name="type_of_doctor" placeholder="e.g. Cardiologist, Neurologist" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Hospital / Clinic Name</label>
+                    <div class="input-icon">
+                        <i class="fas fa-hospital"></i>
+                        <input type="text" name="hospital_name" placeholder="e.g. City Care Hospital" required>
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>City</label>
+                        <div class="input-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <input type="text" name="hospital_city" placeholder="City" required>
+                        </div>
+                    </div>
+                    <div style="flex:1;">
+                        <label>OPD / Room</label>
+                        <div class="input-icon">
+                            <i class="fas fa-door-open"></i>
+                            <input type="text" name="opd_number" placeholder="Optional">
+                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn-submit">Register as Doctor <i class="fas fa-arrow-right"></i></button>

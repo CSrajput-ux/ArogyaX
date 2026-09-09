@@ -44,7 +44,7 @@
                         <div class="avatar-xl">{{ username[0]|upper }}</div>
                         {% endif %}
                     </div>
-                    <div style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">Dr. {{ username }}</div>
+                    <div style="font-size:0.95rem;color:#0f172a;font-weight:700;margin-top:1rem;">Dr. {{ username or (user.username if user else 'Doctor') }}</div>
                     <div style="font-size:0.8rem;color:var(--primary);font-weight:600;">{{ user.type_of_doctor or
                         'Specialist' }}</div>
                     <div style="margin-top:0.5rem;">
@@ -117,12 +117,71 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Availability / Schedule</label>
-                            <div class="input-icon">
-                                <i class="fas fa-calendar-check"></i>
-                                <input type="text" name="availability" value="{{ user.availability or '' }}"
-                                    placeholder="e.g. Mon–Fri, 10:00 AM – 5:00 PM">
+                        <h3 style="margin:1.5rem 0 1.2rem;font-size:1rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;font-weight:700;">
+                            🌍 Location & Consultation Settings</h3>
+                        
+                        <div class="form-group" style="background:#f8fafc; padding:1rem; border-radius:10px; border:1px solid #e2e8f0;">
+                            <label style="display:flex; justify-content:space-between; align-items:center;">
+                                Practice Coordinates (Required for Search)
+                                <button type="button" class="btn-xs" onclick="getGPSLocation()" style="background:#0f52ab; color:#fff; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;"><i class="fas fa-location-arrow"></i> Get Current Location</button>
+                            </label>
+                            <div class="form-grid-2" style="margin-top:0.5rem; margin-bottom:0;">
+                                <div class="input-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <input type="text" id="latitude" name="latitude" value="{{ user.location.coordinates[1] if user.location else '' }}" placeholder="Latitude" readonly required>
+                                </div>
+                                <div class="input-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <input type="text" id="longitude" name="longitude" value="{{ user.location.coordinates[0] if user.location else '' }}" placeholder="Longitude" readonly required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2" style="margin-top:1rem;">
+                            <div class="form-group">
+                                <label>Consultation Type</label>
+                                <select name="consultation_type" class="input-icon" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px;" multiple>
+                                    <option value="ONLINE" {% if user.consultation_type and 'ONLINE' in user.consultation_type %}selected{% endif %}>Online Video Consult</option>
+                                    <option value="OFFLINE" {% if user.consultation_type and 'OFFLINE' in user.consultation_type %}selected{% endif %}>Offline Hospital/Clinic</option>
+                                </select>
+                                <small style="color:var(--text-muted); font-size:0.75rem;">Hold Ctrl/Cmd to select multiple</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Hospital/Clinic City</label>
+                                <div class="input-icon">
+                                    <i class="fas fa-city"></i>
+                                    <input type="text" name="city" value="{{ user.city or '' }}" placeholder="e.g. New Delhi">
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 style="margin:1.5rem 0 1.2rem;font-size:1rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;font-weight:700;">
+                            🕒 Weekly Availability</h3>
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div class="form-group">
+                                <label>Monday</label>
+                                <input type="text" name="avail_monday" value="{{ user.availability.Monday if user.availability else '' }}" placeholder="e.g. 10:00 AM - 2:00 PM" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Tuesday</label>
+                                <input type="text" name="avail_tuesday" value="{{ user.availability.Tuesday if user.availability else '' }}" placeholder="e.g. 4:00 PM - 8:00 PM" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Wednesday</label>
+                                <input type="text" name="avail_wednesday" value="{{ user.availability.Wednesday if user.availability else '' }}" placeholder="e.g. 10:00 AM - 1:00 PM" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Thursday</label>
+                                <input type="text" name="avail_thursday" value="{{ user.availability.Thursday if user.availability else '' }}" placeholder="" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Friday</label>
+                                <input type="text" name="avail_friday" value="{{ user.availability.Friday if user.availability else '' }}" placeholder="" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Saturday</label>
+                                <input type="text" name="avail_saturday" value="{{ user.availability.Saturday if user.availability else '' }}" placeholder="" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
                             </div>
                         </div>
 
@@ -155,6 +214,20 @@
                         `<img src="${e.target.result}" alt="Preview" class="doctor-photo-lg">`;
                 };
                 reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function getGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                    alert("Location captured successfully!");
+                }, function(error) {
+                    alert("Error capturing location. Please ensure location permissions are granted.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
             }
         }
     </script>

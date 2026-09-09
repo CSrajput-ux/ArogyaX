@@ -103,6 +103,11 @@ def doctor_register():
         email = sanitize_text(request.form.get('email', ''))
         password = request.form.get('password', '')
         type_of_doctor = sanitize_text(request.form.get('type_of_doctor', 'General Physician'))
+        hospital_name = sanitize_text(request.form.get('hospital_name', 'Independent Practice'))
+        hospital_city = sanitize_text(request.form.get('hospital_city', ''))
+        hospital_address = sanitize_text(request.form.get('hospital_address', ''))
+        department = sanitize_text(request.form.get('department', type_of_doctor))
+        opd_number = sanitize_text(request.form.get('opd_number', ''))
 
         if not username or not email or not password:
             flash('All fields are required.', 'error')
@@ -124,6 +129,11 @@ def doctor_register():
                 'password': hashed,
                 'role': 'doctor',
                 'type_of_doctor': type_of_doctor,
+                'hospital_name': hospital_name,
+                'hospital_city': hospital_city,
+                'hospital_address': hospital_address,
+                'department': department,
+                'opd_number': opd_number,
                 'is_active': True,
                 'created_at': datetime.utcnow()
             })

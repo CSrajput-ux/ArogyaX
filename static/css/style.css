@@ -166,10 +166,9 @@ ul {
   width: 38px;
   object-fit: contain;
   border-radius: 10px;
-  background: #ffffff;
-  padding: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  padding: 0;
+  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.3);
   flex-shrink: 0;
 }
 
@@ -239,18 +238,38 @@ ul {
   border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
+/* Default user-pill for light theme headers / dashboards */
 .user-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 5px 14px 5px 6px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: #ffffff;
+  border: 1px solid var(--border);
   border-radius: 50px;
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   font-weight: 700;
   font-size: 0.88rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: var(--transition);
+}
+
+.user-pill span {
+  color: var(--text-primary) !important;
+  font-weight: 700;
+}
+
+/* User pill inside Dark Royal Navy Header */
+.header .user-pill {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff !important;
   backdrop-filter: blur(8px);
+  box-shadow: none;
+}
+
+.header .user-pill span {
+  color: #ffffff !important;
 }
 
 .navbar .btn-nav {
@@ -1252,6 +1271,7 @@ ul {
 .sidebar-user .info .name {
   font-size: 0.875rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .sidebar-user .info .role {
@@ -2506,18 +2526,27 @@ textarea:focus {
   color: var(--info) !important;
 }
 
-/* user-pill in header */
-.user-pill {
-  display: flex;
+/* user-pill in header and dashboard */
+.dashboard-header .user-pill,
+.user-profile-pill,
+.navbar .user-pill {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-card);
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 50px;
   padding: 5px 14px 5px 5px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+}
+
+.dashboard-header .user-pill span,
+.user-profile-pill span,
+.navbar .user-pill span {
+  color: var(--text-primary) !important;
+  font-weight: 700;
 }
 
 .user-pill .avatar {
