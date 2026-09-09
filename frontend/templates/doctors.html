@@ -678,10 +678,23 @@
                 <div class="doc-actions-wrap">
                     <a href="/doctor-profile/${d._id}" class="btn-doc-action btn-doc-profile"><i class="fas fa-id-badge"></i> Profile</a>
                     <a href="/doctor-profile/${d._id}" class="btn-doc-action btn-doc-book"><i class="fas fa-calendar-plus"></i> Book</a>
-                    <a href="/videocall" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
+                    <a href="javascript:void(0)" onclick="callDoctorCard('${d.username || 'Dr. Priya Sharma'}')" class="btn-doc-action btn-doc-video"><i class="fas fa-video"></i> Video</a>
                 </div>
             </div>`;
             container.innerHTML += cardHTML;
+        }
+
+        function callDoctorCard(doctorName) {
+            fetch('/api/call/initiate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    doctor_name: doctorName || 'Dr. Priya Sharma',
+                    reason: 'Direct Video Consultation'
+                })
+            }).finally(() => {
+                window.location.href = '/videocall';
+            });
         }
 
         function sortDoctors() {

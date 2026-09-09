@@ -488,3 +488,127 @@ def download_prescription(prescription_id):
     else:
         flash('Prescription PDF not found on server.', 'error')
     return redirect(url_for('patient.vault'))
+
+
+# ── Live Telehealth Call Signaling (Patient to Doctor Priya Sharma / Specialists) ──
+
+# Global in-memory call signaling registry (with auto-expiry)
+ACTIVE_CALLS = {}
+
+@patient_bp.route('/api/call/initiate', methods=['POST'])
+def api_call_initiate():
+    """Patient initiates a live consultation call to a doctor (e.g., Dr. Priya Sharma)."""
+    data = request.get_json() or {}
+    user = get_current_user()
+    
+    caller_name = data.get('caller_name') or (user.get('username') if user else 'Patient')
+    caller_id = str(user['_id']) if user else 'guest_patient'
+    doctor_target = (data.get('doctor_name') or data.get('doctor_id') or 'Dr. Priya Sharma').strip()
+    reason = data.get('reason', 'Telehealth Video Consultation')
+    
+    import time
+    call_id = f"CALL-{int(time.time()*1000)}"
+    room_url = url_for('patient.videocall_direct')
+    
+    # Store call session
+    ACTIVE_CALLS[call_id] = {
+        'call_id': call_id,
+        'caller_name': caller_name,
+        'caller_id': caller_id,
+        'doctor_target': doctor_target,
+        'reason': reason,
+        'status': 'ringing',
+        'created_at': time.time(),
+        'room_url': room_url
+    }
+    
+    # Clean expired calls older than 5 minutes
+    now = time.time()
+    for cid in list(ACTIVE_CALLS.keys()):
+        if now - ACTIVE_CALLS[cid].get('created_at', 0) > 300:
+            ACTIVE_CALLS.pop(cid, None)
+            
+    return jsonify({
+        'success': True,
+        'call_id': call_id,
+        'status': 'ringing',
+        'doctor_target': doctor_target,
+        'room_url': room_url
+    })
+
+
+@patient_bp.route('/api/call/check-incoming', methods=['GET'])
+def api_call_check_incoming():
+    """Doctor side polls to check if there is an active incoming call for them."""
+    user = get_current_user()
+    if not user:
+        return jsonify({'has_incoming': False})
+        
+    doc_username = (user.get('username') or '').strip().lower()
+    doc_fullname = f"dr. {doc_username}".lower()
+    
+    import time
+    now = time.time()
+    
+    for call_id, call_data in list(ACTIVE_CALLS.items()):
+        # Expire stale calls after 90 seconds of ringing
+        if now - call_data.get('created_at', 0) > 90:
+            if call_data.get('status') == 'ringing':
+                call_data['status'] = 'missed'
+            continue
+            
+        if call_data.get('status') == 'ringing':
+            target = call_data.get('doctor_target', '').strip().lower()
+            # Match if target is Priya Sharma or current doctor's username
+            matches = False
+            if 'priya' in target and ('priya' in doc_username or 'priya' in doc_fullname):
+                matches = True
+            elif target in doc_username or doc_username in target or target in doc_fullname:
+                matches = True
+            elif 'priya' in target:
+                # If target is Priya Sharma, and logged in user is a doctor
+                if user.get('role') == 'doctor':
+                    matches = True
+            
+            if matches:
+                return jsonify({
+                    'has_incoming': True,
+                    'call_id': call_id,
+                    'caller_name': call_data.get('caller_name', 'Patient'),
+                    'reason': call_data.get('reason', 'Immediate Consultation'),
+                    'room_url': call_data.get('room_url', '/videocall')
+                })
+                
+    return jsonify({'has_incoming': False})
+
+
+@patient_bp.route('/api/call/respond', methods=['POST'])
+def api_call_respond():
+    """Doctor responds to an incoming call: accept or decline."""
+    data = request.get_json() or {}
+    call_id = data.get('call_id')
+    action = data.get('action')  # 'accept' or 'decline'
+    
+    if call_id and call_id in ACTIVE_CALLS:
+        if action == 'accept':
+            ACTIVE_CALLS[call_id]['status'] = 'accepted'
+            return jsonify({'success': True, 'status': 'accepted', 'room_url': ACTIVE_CALLS[call_id]['room_url']})
+        else:
+            ACTIVE_CALLS[call_id]['status'] = 'declined'
+            return jsonify({'success': True, 'status': 'declined'})
+            
+    return jsonify({'success': False, 'message': 'Call session not found'}), 404
+
+
+@patient_bp.route('/api/call/status/<call_id>', methods=['GET'])
+def api_call_status(call_id):
+    """Patient polls to check whether the doctor accepted or declined the call."""
+    if call_id in ACTIVE_CALLS:
+        return jsonify({
+            'success': True,
+            'call_id': call_id,
+            'status': ACTIVE_CALLS[call_id].get('status'),
+            'room_url': ACTIVE_CALLS[call_id].get('room_url')
+        })
+    return jsonify({'success': False, 'status': 'not_found'}), 404
+

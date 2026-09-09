@@ -848,7 +848,20 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', initLocalCamera);
+        document.addEventListener('DOMContentLoaded', () => {
+            initLocalCamera();
+            {% if role == 'patient' %}
+            fetch('/api/call/initiate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    doctor_name: "{{ doctor_name or 'Dr. Priya Sharma' }}",
+                    caller_name: "{{ username or 'Patient' }}",
+                    reason: "Telehealth Live Consultation"
+                })
+            }).catch(e => {});
+            {% endif %}
+        });
     </script>
 </body>
 

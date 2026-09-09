@@ -44,7 +44,7 @@
                         <div class="avatar-xl">{{ username[0]|upper }}</div>
                         {% endif %}
                     </div>
-                    <div style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">Dr. {{ username }}</div>
+                    <div style="font-size:0.95rem;color:#0f172a;font-weight:700;margin-top:1rem;">Dr. {{ username or (user.username if user else 'Doctor') }}</div>
                     <div style="font-size:0.8rem;color:var(--primary);font-weight:600;">{{ user.type_of_doctor or
                         'Specialist' }}</div>
                     <div style="margin-top:0.5rem;">
