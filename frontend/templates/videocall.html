@@ -522,7 +522,7 @@
 
                 <div class="doctor-stream-placeholder">
                     <div class="doc-avatar-big">
-                        {{ (doctor_name[:2] if role == 'doctor' else (doctor_name[3:5] if doctor_name and doctor_name.startswith('Dr.') else 'PS'))|upper }}
+                        {{ (doctor_name[4:6] if doctor_name and doctor_name.startswith('Dr.') else (doctor_name[:2] if doctor_name else 'PS'))|upper }}
                     </div>
                     <h2 style="font-size:1.6rem;font-weight:800;margin:0 0 6px 0;color:#ffffff;">
                         {{ doctor_name or ('Patient' if role == 'doctor' else 'Doctor') }}
@@ -592,7 +592,7 @@
             <div class="side-tab-content active" id="tabContentDetails">
                 <div class="doctor-card-panel">
                     <div class="doc-panel-avatar">
-                        {{ (doctor_name[:2] if role == 'doctor' else (doctor_name[3:5] if doctor_name and doctor_name.startswith('Dr.') else 'PS'))|upper }}
+                        {{ (doctor_name[4:6] if doctor_name and doctor_name.startswith('Dr.') else (doctor_name[:2] if doctor_name else 'PS'))|upper }}
                     </div>
                     <h3 style="font-size:1.15rem;font-weight:800;margin:0 0 4px 0;color:#ffffff;">
                         {{ doctor_name or ('Patient' if role == 'doctor' else 'Doctor') }}
@@ -606,23 +606,23 @@
                 </div>
 
                 <h4 style="font-size:0.9rem;font-weight:700;color:#94a3b8;margin:0 0 10px 0;text-transform:uppercase;letter-spacing:0.04em;">
-                    Patient Vitals (if a wearable is connected)
+                    Patient Vitals (no wearable data connected)
                 </h4>
                 <div class="vitals-grid">
                     <div class="vital-box">
-                        <div class="val">74 bpm</div>
+                        <div class="val">Not connected</div>
                         <div class="lbl">Pulse / Heart Rate</div>
                     </div>
                     <div class="vital-box">
-                        <div class="val">120/80</div>
+                        <div class="val">Not connected</div>
                         <div class="lbl">Blood Pressure</div>
                     </div>
                     <div class="vital-box">
-                        <div class="val">99%</div>
+                        <div class="val">Not connected</div>
                         <div class="lbl">Blood Oxygen (SpO2)</div>
                     </div>
                     <div class="vital-box">
-                        <div class="val">98.4°F</div>
+                        <div class="val">Not connected</div>
                         <div class="lbl">Temperature</div>
                     </div>
                 </div>
