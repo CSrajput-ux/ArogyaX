@@ -834,7 +834,7 @@
                             try { await peerConnection.addIceCandidate(signal.candidate); } catch (error) { console.warn('ICE candidate rejected:', error); }
                         } else pendingCandidates.push(signal.candidate);
                     } else if (signal.type === 'ended') {
-                        setCallStatus('The other participant ended the call'); await cleanupCall(false);
+                        setCallStatus('The other participant ended the call'); await cleanupCall(false); return;
                     }
                 }
                 if (currentRole === 'patient' && incomingCallId) {
@@ -910,6 +910,7 @@
             if (pollInterval) clearInterval(pollInterval); if (timerInterval) clearInterval(timerInterval);
             pollInterval = timerInterval = null;
             if (notifyPeer && callId) try { await api('/api/call/end/' + encodeURIComponent(callId), { method: 'POST', body: '{}' }); } catch (_) {}
+            if (callId) try { await api('/api/call/leave/' + encodeURIComponent(callId), { method: 'POST', body: '{}' }); } catch (_) {}
             if (notifyPeer && currentRole === 'patient' && incomingCallId) {
                 try { await api('/api/call/respond', { method: 'POST', body: JSON.stringify({ call_id: incomingCallId, action: 'cancel' }) }); } catch (_) {}
             }
@@ -974,6 +975,10 @@
         });
         window.addEventListener('beforeunload', () => {
             if (pollInterval) clearInterval(pollInterval); if (timerInterval) clearInterval(timerInterval);
+            if (callId) fetch('/api/call/end/' + encodeURIComponent(callId), {
+                method: 'POST', credentials: 'same-origin', keepalive: true,
+                headers: { 'Content-Type': 'application/json' }, body: '{}'
+            }).catch(() => {});
             localStream?.getTracks().forEach(t => t.stop()); screenStream?.getTracks().forEach(t => t.stop()); peerConnection?.close();
         });
     </script>
