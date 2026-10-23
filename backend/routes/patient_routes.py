@@ -338,16 +338,24 @@ def videocall_direct():
     appt = None
     if db_module.appointments_col is not None:
         if user.get('role') == 'patient':
-            appt = db_module.appointments_col.find_one({'user_id': user['_id'], 'status': 'Approved'})
+            appt = db_module.appointments_col.find_one({'user_id': user['_id'], 'status': {'$in': ['Approved', 'Active']}})
         else:
-            appt = db_module.appointments_col.find_one({'doctor_id': user['_id'], 'status': 'Approved'})
+            appt = db_module.appointments_col.find_one({'doctor_id': user['_id'], 'status': {'$in': ['Approved', 'Active']}})
 
-    appt_id = str(appt['_id']) if appt else 'telehealth-session-live'
-    doctor_name = "Dr. Priya Sharma"
-    specialization = appt.get('type_of_doctor', 'Senior Cardiologist') if appt else 'Senior Specialist'
+    if not appt:
+        flash('A video consultation requires an approved appointment assigned to your account.', 'warning')
+        return redirect(url_for('patient.index'))
+
+    appt_id = str(appt['_id'])
+    doctor_obj = db_module.get_user_by_id(appt.get('doctor_id')) if appt.get('doctor_id') else None
+    if user.get('role') == 'doctor':
+        remote_name = appt.get('name') or 'Patient'
+    else:
+        remote_name = f"Dr. {doctor_obj.get('username')}" if doctor_obj else f"Dr. {appt.get('doctor_name') or 'Assigned Doctor'}"
+    specialization = appt.get('type_of_doctor', 'Specialist')
     user_str = dict(user)
     user_str['_id'] = str(user['_id'])
-    return render_template('videocall.html', username=user['username'], appointment_id=appt_id, role=user.get('role', 'patient'), user=user_str, doctor_name=doctor_name, specialization=specialization, appointment=appt)
+    return render_template('videocall.html', username=user['username'], appointment_id=appt_id, role=user.get('role', 'patient'), user=user_str, doctor_name=remote_name, specialization=specialization, appointment=appt)
 
 
 @patient_bp.route('/videocall/<appointment_id>')
@@ -363,23 +371,32 @@ def videocall(appointment_id):
         flash('Appointment not found.', 'error')
         return redirect(url_for('patient.index'))
 
-    if not appt or appt.get('status') != 'Approved':
+    if not appt or appt.get('status') not in ('Approved', 'Active'):
         flash('Video call is only available for confirmed approved appointments.', 'error')
         return redirect(url_for('patient.index'))
 
     # Security check for authorization
     if user.get('role') == 'patient':
-        if str(appt['user_id']) != str(user['_id']):
+        if str(appt.get('user_id', '')) != str(user['_id']):
             flash('Unauthorized access.', 'error')
             return redirect(url_for('patient.index'))
     elif user.get('role') == 'doctor':
-        if str(appt.get('doctor_id', '')) != str(user['_id']) and appt.get('type_of_doctor') != user.get('type_of_doctor'):
+        assigned_doctor_id = str(appt.get('doctor_id', ''))
+        if (assigned_doctor_id and assigned_doctor_id != str(user['_id'])) or (not assigned_doctor_id and appt.get('type_of_doctor') != user.get('type_of_doctor')):
             flash('Unauthorized access.', 'error')
             return redirect(url_for('patient.index'))
+    else:
+        flash('Only the patient and assigned doctor can join this consultation.', 'error')
+        return redirect(url_for('patient.index'))
 
+    doctor_obj = db_module.get_user_by_id(appt.get('doctor_id')) if appt.get('doctor_id') else None
+    if user.get('role') == 'doctor':
+        remote_name = appt.get('name') or 'Patient'
+    else:
+        remote_name = f"Dr. {doctor_obj.get('username')}" if doctor_obj else f"Dr. {appt.get('doctor_name') or 'Assigned Doctor'}"
     user_str = dict(user)
     user_str['_id'] = str(user['_id'])
-    return render_template('videocall.html', username=user['username'], appointment_id=appointment_id, role=user.get('role', 'patient'), user=user_str, doctor_name=f"Dr. {user['username']}", specialization=appt.get('type_of_doctor'), appointment=appt)
+    return render_template('videocall.html', username=user['username'], appointment_id=appointment_id, role=user.get('role', 'patient'), user=user_str, doctor_name=remote_name, specialization=appt.get('type_of_doctor'), appointment=appt)
 
 
 @patient_bp.route('/vault', methods=['GET', 'POST'])
@@ -633,8 +650,6 @@ def _authorized_call_user(appointment_id):
     user = get_current_user()
     if not user:
         return None, (jsonify({'success': False, 'message': 'Authentication required'}), 401)
-    if str(appointment_id) in ('telehealth-session-live', ''):
-        return user, None
     try:
         appt = db_module.appointments_col.find_one({'_id': ObjectId(str(appointment_id))}) if db_module.appointments_col is not None else None
     except Exception:
@@ -718,11 +733,12 @@ def api_webrtc_get_signals(call_id):
         room = _WEBRTC_ROOMS.get(call_id)
         if not room or participant_id not in room['participants']:
             return jsonify({'success': False, 'message': 'Call room not found or user is not a participant'}), 404
-        received = [s for s in room['signals'] if s.get('from') != participant_id and s.get('seq', 0) > 0]
-        # Assign monotonic sequence IDs before clients poll so each signal is delivered once.
+        after_seq = request.args.get('after', default=0, type=int)
+        # Assign stable sequence IDs before filtering so each poll only returns new signals.
         for index, signal in enumerate(room['signals'], start=1):
             signal.setdefault('seq', index)
-        received = [dict(s) for s in room['signals'] if s.get('from') != participant_id and s.get('seq', 0) > 0]
+        received = [dict(s) for s in room['signals']
+                    if s.get('from') != participant_id and s.get('seq', 0) > after_seq]
         room['updated_at'] = _call_time.time()
     return jsonify({'success': True, 'signals': [{'type': s['type'], 'description': s.get('description'), 'candidate': s.get('candidate'), 'seq': s['seq']} for s in received]})
 
