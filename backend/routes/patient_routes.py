@@ -507,128 +507,138 @@ def download_prescription(prescription_id):
     return redirect(url_for('patient.vault'))
 
 
-# ── Live Telehealth Call Signaling (Patient to Doctor Priya Sharma / Specialists) ──
-
-# Global in-memory call signaling registry (with auto-expiry)
+# ── Appointment-scoped call invitations ───────────────────────────────────
+# This registry is process-local; use shared storage (e.g. Redis) for multi-worker deployments.
 ACTIVE_CALLS = {}
 
 @patient_bp.route('/api/call/initiate', methods=['POST'])
+@login_required
 def api_call_initiate():
-    """Patient initiates a live consultation call to a doctor (e.g., Dr. Priya Sharma)."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     user = get_current_user()
-    
-    caller_name = data.get('caller_name') or (user.get('username') if user else 'Patient')
-    caller_id = str(user['_id']) if user else 'guest_patient'
-    doctor_target = (data.get('doctor_name') or data.get('doctor_id') or 'Dr. Priya Sharma').strip()
-    reason = data.get('reason', 'Telehealth Video Consultation')
-    
+    if not user or user.get('role') != 'patient':
+        return jsonify({'success': False, 'message': 'Only the appointment patient can start a call'}), 403
+
+    appointment_id = str(data.get('appointment_id') or '')
+    authorized_user, error_response = _authorized_call_user(appointment_id)
+    if error_response:
+        return error_response
+    try:
+        appt = db_module.appointments_col.find_one({'_id': ObjectId(appointment_id)}) if db_module.appointments_col is not None else None
+    except Exception:
+        appt = None
+    if not appt or str(appt.get('user_id') or '') != str(user['_id']):
+        return jsonify({'success': False, 'message': 'Appointment not found for this patient'}), 404
+
+    doctor_id = str(appt.get('doctor_id') or '')
+    doctor = db_module.get_user_by_id(appt.get('doctor_id')) if appt.get('doctor_id') else None
+    doctor_target = f"Dr. {doctor.get('username')}" if doctor else str(appt.get('type_of_doctor') or 'Assigned Doctor')
     import time
-    call_id = f"CALL-{int(time.time()*1000)}"
-    room_url = url_for('patient.videocall_direct')
-    
-    # Store call session
-    ACTIVE_CALLS[call_id] = {
-        'call_id': call_id,
-        'caller_name': caller_name,
-        'caller_id': caller_id,
-        'doctor_target': doctor_target,
-        'reason': reason,
-        'status': 'ringing',
-        'created_at': time.time(),
-        'room_url': room_url
-    }
-    
-    # Clean expired calls older than 5 minutes
     now = time.time()
-    for cid in list(ACTIVE_CALLS.keys()):
+    for cid in list(ACTIVE_CALLS):
         if now - ACTIVE_CALLS[cid].get('created_at', 0) > 300:
             ACTIVE_CALLS.pop(cid, None)
-            
-    return jsonify({
-        'success': True,
+
+    call_id = f"CALL-{int(now * 1000)}-{str(user['_id'])[-6:]}"
+    room_url = url_for('patient.videocall', appointment_id=appointment_id)
+    ACTIVE_CALLS[call_id] = {
         'call_id': call_id,
-        'status': 'ringing',
+        'appointment_id': appointment_id,
+        'caller_name': user.get('username') or 'Patient',
+        'caller_id': str(user['_id']),
+        'doctor_id': doctor_id,
         'doctor_target': doctor_target,
+        'specialization': appt.get('type_of_doctor'),
+        'reason': str(data.get('reason') or 'Telehealth Video Consultation')[:200],
+        'status': 'ringing',
+        'created_at': now,
         'room_url': room_url
-    })
+    }
+    return jsonify({'success': True, 'call_id': call_id, 'status': 'ringing', 'doctor_target': doctor_target, 'room_url': room_url})
 
 
 @patient_bp.route('/api/call/check-incoming', methods=['GET'])
+@login_required
 def api_call_check_incoming():
-    """Doctor side polls to check if there is an active incoming call for them."""
     user = get_current_user()
-    if not user:
-        return jsonify({'has_incoming': False})
-        
-    doc_username = (user.get('username') or '').strip().lower()
-    doc_fullname = f"dr. {doc_username}".lower()
-    
+    if not user or user.get('role') != 'doctor':
+        return jsonify({'has_incoming': False}), 403
     import time
     now = time.time()
-    
-    for call_id, call_data in list(ACTIVE_CALLS.items()):
-        # Expire stale calls after 90 seconds of ringing
-        if now - call_data.get('created_at', 0) > 90:
-            if call_data.get('status') == 'ringing':
-                call_data['status'] = 'missed'
+    for call_data in list(ACTIVE_CALLS.values()):
+        if call_data.get('status') != 'ringing':
             continue
-            
-        if call_data.get('status') == 'ringing':
-            target = call_data.get('doctor_target', '').strip().lower()
-            # Match if target is Priya Sharma or current doctor's username
-            matches = False
-            if 'priya' in target and ('priya' in doc_username or 'priya' in doc_fullname):
-                matches = True
-            elif target in doc_username or doc_username in target or target in doc_fullname:
-                matches = True
-            elif 'priya' in target:
-                # If target is Priya Sharma, and logged in user is a doctor
-                if user.get('role') == 'doctor':
-                    matches = True
-            
-            if matches:
-                return jsonify({
-                    'has_incoming': True,
-                    'call_id': call_id,
-                    'caller_name': call_data.get('caller_name', 'Patient'),
-                    'reason': call_data.get('reason', 'Immediate Consultation'),
-                    'room_url': call_data.get('room_url', '/videocall')
-                })
-                
+        if now - call_data.get('created_at', 0) > 90:
+            call_data['status'] = 'missed'
+            continue
+        target_doctor_id = call_data.get('doctor_id')
+        matches = (target_doctor_id == str(user['_id'])) if target_doctor_id else (
+            call_data.get('specialization') and call_data.get('specialization') == user.get('type_of_doctor')
+        )
+        if matches:
+            return jsonify({
+                'has_incoming': True,
+                'call_id': call_data['call_id'],
+                'caller_name': call_data.get('caller_name', 'Patient'),
+                'reason': call_data.get('reason', 'Video consultation'),
+                'room_url': call_data.get('room_url')
+            })
     return jsonify({'has_incoming': False})
 
 
 @patient_bp.route('/api/call/respond', methods=['POST'])
+@login_required
 def api_call_respond():
-    """Doctor responds to an incoming call: accept or decline."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     call_id = data.get('call_id')
-    action = data.get('action')  # 'accept' or 'decline'
-    
-    if call_id and call_id in ACTIVE_CALLS:
-        if action == 'accept':
-            ACTIVE_CALLS[call_id]['status'] = 'accepted'
-            return jsonify({'success': True, 'status': 'accepted', 'room_url': ACTIVE_CALLS[call_id]['room_url']})
-        else:
-            ACTIVE_CALLS[call_id]['status'] = 'declined'
-            return jsonify({'success': True, 'status': 'declined'})
-            
-    return jsonify({'success': False, 'message': 'Call session not found'}), 404
+    action = data.get('action')
+    user = get_current_user()
+    if not call_id or call_id not in ACTIVE_CALLS:
+        return jsonify({'success': False, 'message': 'Call session not found'}), 404
+    call_data = ACTIVE_CALLS[call_id]
+
+    if action == 'cancel':
+        if user.get('role') != 'patient' or call_data.get('caller_id') != str(user['_id']):
+            return jsonify({'success': False, 'message': 'Only the caller can cancel this invitation'}), 403
+        call_data['status'] = 'ended'
+        return jsonify({'success': True, 'status': 'ended'})
+
+    if user.get('role') != 'doctor' or action not in ('accept', 'decline'):
+        return jsonify({'success': False, 'message': 'Invalid call response or role'}), 403
+    target_doctor_id = call_data.get('doctor_id')
+    authorized = (target_doctor_id == str(user['_id'])) if target_doctor_id else (
+        call_data.get('specialization') and call_data.get('specialization') == user.get('type_of_doctor')
+    )
+    if not authorized:
+        return jsonify({'success': False, 'message': 'This call is assigned to another doctor'}), 403
+    if call_data.get('status') != 'ringing':
+        return jsonify({'success': False, 'message': 'This call is no longer ringing'}), 409
+    import time
+    if time.time() - call_data.get('created_at', 0) > 90:
+        call_data['status'] = 'missed'
+        return jsonify({'success': False, 'message': 'This call has expired'}), 410
+    call_data['status'] = 'accepted' if action == 'accept' else 'declined'
+    result = {'success': True, 'status': call_data['status']}
+    if action == 'accept':
+        result['room_url'] = call_data['room_url']
+    return jsonify(result)
 
 
 @patient_bp.route('/api/call/status/<call_id>', methods=['GET'])
+@login_required
 def api_call_status(call_id):
-    """Patient polls to check whether the doctor accepted or declined the call."""
-    if call_id in ACTIVE_CALLS:
-        return jsonify({
-            'success': True,
-            'call_id': call_id,
-            'status': ACTIVE_CALLS[call_id].get('status'),
-            'room_url': ACTIVE_CALLS[call_id].get('room_url')
-        })
-    return jsonify({'success': False, 'status': 'not_found'}), 404
-
+    user = get_current_user()
+    call_data = ACTIVE_CALLS.get(call_id)
+    if not call_data:
+        return jsonify({'success': False, 'status': 'not_found'}), 404
+    if call_data.get('caller_id') != str(user['_id']):
+        return jsonify({'success': False, 'message': 'Only the caller can view this call status'}), 403
+    return jsonify({
+        'success': True,
+        'call_id': call_id,
+        'status': call_data.get('status'),
+        'room_url': call_data.get('room_url')
+    })
 
 
 # ── WebRTC telehealth signaling (authenticated participants only) ───────────
