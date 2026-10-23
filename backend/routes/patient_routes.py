@@ -381,7 +381,7 @@ def videocall(appointment_id):
             flash('Unauthorized access.', 'error')
             return redirect(url_for('patient.index'))
     elif user.get('role') == 'doctor':
-        assigned_doctor_id = str(appt.get('doctor_id', ''))
+        assigned_doctor_id = str(appt.get('doctor_id') or '')
         if (assigned_doctor_id and assigned_doctor_id != str(user['_id'])) or (not assigned_doctor_id and appt.get('type_of_doctor') != user.get('type_of_doctor')):
             flash('Unauthorized access.', 'error')
             return redirect(url_for('patient.index'))
@@ -656,8 +656,8 @@ def _authorized_call_user(appointment_id):
         appt = None
     if not appt or appt.get('status') not in ('Approved', 'Active'):
         return None, (jsonify({'success': False, 'message': 'Approved appointment not found'}), 404)
-    patient_id = str(appt.get('user_id', ''))
-    doctor_id = str(appt.get('doctor_id', ''))
+    patient_id = str(appt.get('user_id') or '')
+    doctor_id = str(appt.get('doctor_id') or '')
     user_id = str(user.get('_id'))
     authorized = (user.get('role') == 'patient' and patient_id == user_id) or (user.get('role') == 'doctor' and (doctor_id == user_id or (not doctor_id and appt.get('type_of_doctor') == user.get('type_of_doctor'))))
     if not authorized:
