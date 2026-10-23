@@ -681,6 +681,7 @@
     <script>
         const appointmentId = {{ appointment_id|tojson }};
         const currentRole = {{ role|default('patient')|tojson }};
+        let incomingCallId = null;
         let localStream = null, screenStream = null, peerConnection = null;
         let isMicMuted = false, isCamOff = false, isScreenSharing = false;
         let callSeconds = 0, timerInterval = null, pollInterval = null, callId = null, lastSignalSeq = 0;
@@ -793,6 +794,14 @@
                 if (!mediaAttempted) await initLocalCamera();
                 const session = await api('/api/call/session', { method: 'POST', body: JSON.stringify({ appointment_id: appointmentId, role: currentRole }) });
                 callId = session.call_id; ensurePeerConnection();
+                if (currentRole === 'patient' && session.participants < 2 && !incomingCallId) {
+                    try {
+                        const invitation = await api('/api/call/initiate', {
+                            method: 'POST', body: JSON.stringify({ appointment_id: appointmentId, reason: 'Telehealth Video Consultation' })
+                        });
+                        incomingCallId = invitation.call_id;
+                    } catch (error) { console.warn('Unable to notify doctor; the appointment room remains available:', error); }
+                }
                 if (session.offer && !peerConnection.currentRemoteDescription) {
                     await peerConnection.setRemoteDescription(session.offer); await flushCandidates();
                     const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer);
@@ -827,6 +836,17 @@
                     } else if (signal.type === 'ended') {
                         setCallStatus('The other participant ended the call'); await cleanupCall(false);
                     }
+                }
+                if (currentRole === 'patient' && incomingCallId) {
+                    try {
+                        const invitation = await api('/api/call/status/' + encodeURIComponent(incomingCallId));
+                        const terminal = { declined: 'The doctor declined the call', missed: 'The call invitation expired', ended: 'The call invitation was cancelled' };
+                        if (terminal[invitation.status]) {
+                            setCallStatus(terminal[invitation.status]);
+                            await cleanupCall(false);
+                            return;
+                        }
+                    } catch (_) { /* Invitation status is supplementary to the WebRTC connection. */ }
                 }
             } catch (error) { console.warn('Call signaling poll failed:', error); }
         }
@@ -890,6 +910,9 @@
             if (pollInterval) clearInterval(pollInterval); if (timerInterval) clearInterval(timerInterval);
             pollInterval = timerInterval = null;
             if (notifyPeer && callId) try { await api('/api/call/end/' + encodeURIComponent(callId), { method: 'POST', body: '{}' }); } catch (_) {}
+            if (notifyPeer && currentRole === 'patient' && incomingCallId) {
+                try { await api('/api/call/respond', { method: 'POST', body: JSON.stringify({ call_id: incomingCallId, action: 'cancel' }) }); } catch (_) {}
+            }
             screenStream?.getTracks().forEach(t => t.stop());
             if (peerConnection) { peerConnection.ontrack = null; peerConnection.close(); peerConnection = null; }
             localStream?.getTracks().forEach(t => t.stop()); localStream = null; isCallConnected = false;
