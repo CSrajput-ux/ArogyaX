@@ -816,7 +816,7 @@
                                 </div>
                             </div>
                             <div style="display:flex; gap:0.5rem;">
-                                <a href="{{url_for('videocall_direct')}}"
+                                <a href="{{url_for('videocall', appointment_id=appt['_id'])}}"
                                     style="background:var(--primary); color:white; padding:0.5rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:0.4rem;">
                                     <i class="fas fa-video"></i> Join Call
                                 </a>
