@@ -612,3 +612,133 @@ def api_call_status(call_id):
         })
     return jsonify({'success': False, 'status': 'not_found'}), 404
 
+
+
+# ── WebRTC telehealth signaling (authenticated participants only) ───────────
+# In-memory storage is suitable only for a single worker/process. Use Redis or
+# a database-backed signaling store when deploying multiple workers/instances.
+import time as _call_time
+from threading import RLock as _RLock
+_WEBRTC_ROOMS = {}
+_WEBRTC_LOCK = _RLock()
+_WEBRTC_TTL_SECONDS = 4 * 60 * 60
+
+def _prune_webrtc_rooms(now=None):
+    now = now or _call_time.time()
+    for room_key in list(_WEBRTC_ROOMS):
+        if now - _WEBRTC_ROOMS[room_key].get('updated_at', now) > _WEBRTC_TTL_SECONDS:
+            _WEBRTC_ROOMS.pop(room_key, None)
+
+def _authorized_call_user(appointment_id):
+    user = get_current_user()
+    if not user:
+        return None, (jsonify({'success': False, 'message': 'Authentication required'}), 401)
+    if str(appointment_id) in ('telehealth-session-live', ''):
+        return user, None
+    try:
+        appt = db_module.appointments_col.find_one({'_id': ObjectId(str(appointment_id))}) if db_module.appointments_col is not None else None
+    except Exception:
+        appt = None
+    if not appt or appt.get('status') not in ('Approved', 'Active'):
+        return None, (jsonify({'success': False, 'message': 'Approved appointment not found'}), 404)
+    patient_id = str(appt.get('user_id', ''))
+    doctor_id = str(appt.get('doctor_id', ''))
+    user_id = str(user.get('_id'))
+    authorized = (user.get('role') == 'patient' and patient_id == user_id) or (user.get('role') == 'doctor' and (doctor_id == user_id or (not doctor_id and appt.get('type_of_doctor') == user.get('type_of_doctor'))))
+    if not authorized:
+        return None, (jsonify({'success': False, 'message': 'You are not authorized for this appointment'}), 403)
+    return user, None
+
+@patient_bp.route('/api/call/session', methods=['POST'])
+@login_required
+def api_webrtc_session():
+    data = request.get_json(silent=True) or {}
+    appointment_id = str(data.get('appointment_id') or '')
+    user, error_response = _authorized_call_user(appointment_id)
+    if error_response:
+        return error_response
+    room_id = appointment_id or ('user-room-' + str(user['_id']))
+    participant_id = str(user['_id'])
+    with _WEBRTC_LOCK:
+        _prune_webrtc_rooms()
+        room = _WEBRTC_ROOMS.setdefault(room_id, {'participants': [], 'signals': [], 'created_at': _call_time.time(), 'updated_at': _call_time.time()})
+        if participant_id not in room['participants']:
+            if len(room['participants']) >= 2:
+                return jsonify({'success': False, 'message': 'This consultation already has two participants'}), 409
+            room['participants'].append(participant_id)
+        is_first = room['participants'][0] == participant_id
+        room['updated_at'] = _call_time.time()
+        existing_offer = next((s for s in room['signals'] if s.get('type') == 'offer' and s.get('from') != participant_id), None)
+        return jsonify({'success': True, 'call_id': room_id, 'should_offer': is_first and len(room['participants']) == 1, 'offer': existing_offer.get('description') if existing_offer else None, 'participants': len(room['participants'])})
+
+@patient_bp.route('/api/call/signal/<path:call_id>', methods=['POST'])
+@login_required
+def api_webrtc_signal(call_id):
+    data = request.get_json(silent=True) or {}
+    signal_type = data.get('type')
+    if signal_type not in ('offer', 'answer'):
+        return jsonify({'success': False, 'message': 'Unsupported signal type'}), 400
+    description = data.get('description') or {}
+    if description.get('type') != signal_type or not description.get('sdp'):
+        return jsonify({'success': False, 'message': 'Invalid SDP description'}), 400
+    user = get_current_user()
+    with _WEBRTC_LOCK:
+        _prune_webrtc_rooms()
+        room = _WEBRTC_ROOMS.get(call_id)
+        if not room or str(user['_id']) not in room['participants']:
+            return jsonify({'success': False, 'message': 'Call room not found or user is not a participant'}), 404
+        room['signals'].append({'type': signal_type, 'description': description, 'from': str(user['_id']), 'at': _call_time.time()})
+        room['updated_at'] = _call_time.time()
+    return jsonify({'success': True})
+
+@patient_bp.route('/api/call/ice/<path:call_id>', methods=['POST'])
+@login_required
+def api_webrtc_ice(call_id):
+    data = request.get_json(silent=True) or {}
+    candidate = data.get('candidate')
+    if not isinstance(candidate, dict) or not candidate.get('candidate'):
+        return jsonify({'success': False, 'message': 'Invalid ICE candidate'}), 400
+    user = get_current_user()
+    with _WEBRTC_LOCK:
+        _prune_webrtc_rooms()
+        room = _WEBRTC_ROOMS.get(call_id)
+        if not room or str(user['_id']) not in room['participants']:
+            return jsonify({'success': False, 'message': 'Call room not found or user is not a participant'}), 404
+        room['signals'].append({'type': 'ice', 'candidate': candidate, 'from': str(user['_id']), 'at': _call_time.time()})
+        room['updated_at'] = _call_time.time()
+    return jsonify({'success': True})
+
+@patient_bp.route('/api/call/signals/<path:call_id>', methods=['GET'])
+@login_required
+def api_webrtc_get_signals(call_id):
+    user = get_current_user()
+    participant_id = str(user['_id'])
+    with _WEBRTC_LOCK:
+        _prune_webrtc_rooms()
+        room = _WEBRTC_ROOMS.get(call_id)
+        if not room or participant_id not in room['participants']:
+            return jsonify({'success': False, 'message': 'Call room not found or user is not a participant'}), 404
+        received = [s for s in room['signals'] if s.get('from') != participant_id and s.get('seq', 0) > 0]
+        # Assign monotonic sequence IDs before clients poll so each signal is delivered once.
+        for index, signal in enumerate(room['signals'], start=1):
+            signal.setdefault('seq', index)
+        received = [dict(s) for s in room['signals'] if s.get('from') != participant_id and s.get('seq', 0) > 0]
+        room['updated_at'] = _call_time.time()
+    return jsonify({'success': True, 'signals': [{'type': s['type'], 'description': s.get('description'), 'candidate': s.get('candidate'), 'seq': s['seq']} for s in received]})
+
+@patient_bp.route('/api/call/end/<path:call_id>', methods=['POST'])
+@login_required
+def api_webrtc_end(call_id):
+    user = get_current_user()
+    participant_id = str(user['_id'])
+    with _WEBRTC_LOCK:
+        room = _WEBRTC_ROOMS.get(call_id)
+        if room and participant_id in room['participants']:
+            room['signals'].append({'type': 'ended', 'from': participant_id, 'at': _call_time.time()})
+            room['updated_at'] = _call_time.time()
+            # Keep the room around briefly so the peer can receive the end signal.
+            room['participants'] = [pid for pid in room['participants'] if pid != participant_id]
+            if not room['participants']:
+                _WEBRTC_ROOMS.pop(call_id, None)
+    return jsonify({'success': True})
+
