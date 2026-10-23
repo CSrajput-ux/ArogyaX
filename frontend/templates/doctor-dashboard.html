@@ -406,7 +406,7 @@
                                         {% endif %}
 
                                         {% if appt.status == 'Approved' or appt.status == 'Active' %}
-                                        <a href="{{ url_for('patient.videocall_direct') }}"
+                                        <a href="{{ url_for('patient.videocall', appointment_id=appt['_id']) }}"
                                             class="btn-xs" style="background:linear-gradient(135deg, #0066ff, #0052cc);color:#fff;border-radius:8px;padding:6px 12px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
                                             <i class="fas fa-video"></i> Consult
                                         </a>
@@ -466,6 +466,38 @@
             }
         }
     </script>
+    <script>
+    (() => {
+        let checking = false;
+        const handledCalls = new Set();
+        async function checkIncomingCall() {
+            if (checking) return;
+            checking = true;
+            try {
+                const response = await fetch('/api/call/check-incoming', { credentials: 'same-origin', cache: 'no-store' });
+                const invitation = await response.json().catch(() => ({}));
+                if (!response.ok || !invitation.has_incoming || handledCalls.has(invitation.call_id)) return;
+                const accept = window.confirm('Incoming video consultation from ' + invitation.caller_name + '.\nReason: ' + invitation.reason + '\n\nAccept this call?');
+                const decision = await fetch('/api/call/respond', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ call_id: invitation.call_id, action: accept ? 'accept' : 'decline' })
+                });
+                const result = await decision.json().catch(() => ({}));
+                if (!decision.ok || !result.success) return;
+                handledCalls.add(invitation.call_id);
+                if (accept && result.room_url) window.location.assign(result.room_url);
+            } catch (error) { console.warn('Incoming-call check failed:', error); }
+            finally { checking = false; }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            checkIncomingCall();
+            window.setInterval(checkIncomingCall, 4000);
+        });
+    })();
+    </script>
+
 </body>
 
 </html>
