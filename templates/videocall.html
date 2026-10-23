@@ -503,7 +503,7 @@
 
         <div style="display:flex;align-items:center;gap:14px;">
             <div class="telehealth-status-badge">
-                <i class="fas fa-lock" style="font-size:0.75rem;"></i> End-to-End Encrypted Session
+                <i class="fas fa-lock" style="font-size:0.75rem;"></i> Encrypted WebRTC Session
             </div>
             <div class="call-timer-badge">
                 <i class="fas fa-clock" style="color:#38bdf8;"></i> <span id="callDurationTimer">00:00</span>
@@ -517,15 +517,15 @@
         <div class="video-stage-main">
             <div class="main-remote-video-wrap" id="mainVideoWrap">
                 <div class="stream-quality-tag">
-                    <i class="fas fa-signal"></i> HD 1080p • 60 fps
+                    <i class="fas fa-signal"></i> Adaptive video quality
                 </div>
 
                 <div class="doctor-stream-placeholder">
                     <div class="doc-avatar-big">
-                        {{ doctor_name[3:5]|upper if doctor_name and doctor_name.startswith('Dr.') else 'PS' }}
+                        {{ (doctor_name[:2] if role == 'doctor' else (doctor_name[3:5] if doctor_name and doctor_name.startswith('Dr.') else 'PS'))|upper }}
                     </div>
                     <h2 style="font-size:1.6rem;font-weight:800;margin:0 0 6px 0;color:#ffffff;">
-                        {{ doctor_name or 'Dr. Priya Sharma' }}
+                        {{ doctor_name or ('Patient' if role == 'doctor' else 'Doctor') }}
                     </h2>
                     <p style="color:#94a3b8;font-size:0.95rem;margin:0;">
                         {{ specialization or 'Senior Cardiologist & Specialist' }}
@@ -536,7 +536,7 @@
                 </div>
 
                 <div class="stream-name-tag">
-                    <i class="fas fa-user-doctor" style="color:#0066ff;"></i> {{ doctor_name or 'Dr. Priya Sharma' }} (Doctor)
+                    <i class="fas fa-user-doctor" style="color:#0066ff;"></i> {{ doctor_name or ('Patient' if role == 'doctor' else 'Doctor') }} ({{ 'Patient' if role == 'doctor' else 'Doctor' }})
                 </div>
             </div>
 
@@ -598,7 +598,7 @@
                         {{ doctor_name or 'Dr. Priya Sharma' }}
                     </h3>
                     <p style="font-size:0.85rem;color:#38bdf8;margin:0 0 8px 0;font-weight:700;">
-                        {{ specialization or 'Senior Cardiologist' }}
+                        {{ specialization or 'Consultation participant' }}
                     </p>
                     <span style="font-size:0.8rem;color:#94a3b8;">
                         <i class="fas fa-hospital"></i> City Care Hospital & Research Center
@@ -637,12 +637,8 @@
             <div class="side-tab-content" id="tabContentChat">
                 <div class="chat-messages-wrap" id="chatMessagesWrap">
                     <div class="chat-bubble remote">
-                        <strong>Dr. Priya Sharma:</strong><br>
-                        Hello {{ username or 'Patient' }}! I am reviewing your recent symptom report. Can you hear and see me clearly?
-                    </div>
-                    <div class="chat-bubble self">
-                        <strong>You:</strong><br>
-                        Yes Doctor, loud and clear.
+                        <strong>Chat status:</strong><br>
+                        Live text chat is not connected in this version. Please use the audio/video call for real-time communication.
                     </div>
                 </div>
 
@@ -679,45 +675,33 @@ Tab Vitamin C 500mg (1-0-0) - 5 days</textarea>
     <script>
         const appointmentId = {{ appointment_id|tojson }};
         const currentRole = {{ role|default('patient')|tojson }};
-        const currentUsername = {{ username|default('User')|tojson }};
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        let localStream = null;
-        let peerConnection = null;
-        let screenStream = null;
-        let isMicMuted = false;
-        let isCamOff = false;
-        let isScreenSharing = false;
-        let callSeconds = 0;
-        let timerInterval = null;
-        let pollInterval = null;
-        let callId = null;
-        let makingOffer = false;
-        let isCallConnected = false;
+        let localStream = null, screenStream = null, peerConnection = null;
+        let isMicMuted = false, isCamOff = false, isScreenSharing = false;
+        let callSeconds = 0, timerInterval = null, pollInterval = null, callId = null, lastSignalSeq = 0;
+        let makingOffer = false, isCallConnected = false, mediaAttempted = false;
         const pendingCandidates = [];
-        const RTC_CONFIG = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-        const api = async (path, options = {}) => {
+        const RTC_CONFIG = { iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ] };
+
+        async function api(path, options = {}) {
             const response = await fetch(path, {
-                credentials: 'same-origin',
-                ...options,
-                headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}), ...(options.headers || {}) }
+                credentials: 'same-origin', ...options,
+                headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload.message || payload.error || 'Request failed (' + response.status + ')');
             return payload;
-        };
+        }
         function setCallStatus(message, connected = false) {
             const badge = document.querySelector('.telehealth-status-badge');
             if (badge) {
                 badge.innerHTML = '<i class="fas fa-circle" style="font-size:.5rem;color:' + (connected ? '#34d399' : '#fbbf24') + '"></i> ' + message;
                 badge.style.color = connected ? '#34d399' : '#fbbf24';
             }
-            const status = document.querySelector('.doctor-stream-placeholder p');
-            if (status) status.textContent = message;
+            const subtitle = document.querySelector('.doctor-stream-placeholder p');
+            if (subtitle) subtitle.textContent = message;
         }
         function startTimer() {
             if (timerInterval) return;
@@ -728,221 +712,197 @@ Tab Vitamin C 500mg (1-0-0) - 5 days</textarea>
                 if (el) el.textContent = String(Math.floor(callSeconds / 60)).padStart(2, '0') + ':' + String(callSeconds % 60).padStart(2, '0');
             }, 1000);
         }
-        async function initLocalCamera() {
-            if (!navigator.mediaDevices?.getUserMedia) {
-                setCallStatus('Camera requires HTTPS or localhost');
-                showCameraFallback();
-                return;
-            }
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const video = document.getElementById('localVideoFeed');
-                if (video) video.srcObject = localStream;
-                setCallStatus('Camera and microphone ready — waiting for the other participant');
-            } catch (error) {
-                showCameraFallback();
-                setCallStatus(error.name === 'NotAllowedError' ? 'Camera/microphone permission denied' : 'Camera/microphone unavailable');
-            }
-        }
         function showCameraFallback() {
-            const video = document.getElementById('localVideoFeed');
-            const fallback = document.getElementById('noCamFallback');
+            const video = document.getElementById('localVideoFeed'), fallback = document.getElementById('noCamFallback');
             if (video) video.style.display = 'none';
             if (fallback) fallback.style.display = 'block';
+        }
+        async function initLocalCamera() {
+            if (mediaAttempted) return localStream;
+            mediaAttempted = true;
+            if (!navigator.mediaDevices?.getUserMedia) {
+                showCameraFallback(); setCallStatus('Camera requires HTTPS or localhost'); return null;
+            }
+            const tracks = [], failures = [];
+            try { localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); }
+            catch (bothError) {
+                failures.push(bothError);
+                for (const constraints of [{ audio: true, video: false }, { audio: false, video: true }]) {
+                    try { tracks.push(...(await navigator.mediaDevices.getUserMedia(constraints)).getTracks()); }
+                    catch (error) { failures.push(error); }
+                }
+                if (tracks.length) localStream = new MediaStream(tracks);
+            }
+            const video = document.getElementById('localVideoFeed');
+            if (localStream?.getVideoTracks().length && video) {
+                video.srcObject = localStream; video.style.display = 'block';
+                document.getElementById('noCamFallback')?.style.setProperty('display', 'none');
+            } else showCameraFallback();
+            if (!localStream) {
+                const denied = failures.some(e => ['NotAllowedError', 'PermissionDeniedError'].includes(e.name));
+                setCallStatus(denied ? 'Camera/microphone permission denied; receiving may still work' : 'No local media device; receiving may still work');
+            }
+            return localStream;
+        }
+        function getVideoSender() {
+            return peerConnection?.getSenders().find(s => s.track?.kind === 'video')
+                || peerConnection?.getTransceivers().find(t => t.receiver?.track?.kind === 'video')?.sender || null;
         }
         function ensurePeerConnection() {
             if (peerConnection) return peerConnection;
             peerConnection = new RTCPeerConnection(RTC_CONFIG);
-            if (localStream) localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            if (localStream?.getTracks().length) {
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                if (!localStream.getAudioTracks().length) peerConnection.addTransceiver('audio', { direction: 'recvonly' });
+                if (!localStream.getVideoTracks().length) peerConnection.addTransceiver('video', { direction: 'recvonly' });
+            } else {
+                peerConnection.addTransceiver('audio', { direction: 'sendrecv' });
+                peerConnection.addTransceiver('video', { direction: 'sendrecv' });
+            }
             peerConnection.ontrack = event => {
                 const remote = document.getElementById('remoteVideoFeed');
                 if (remote && event.streams?.[0]) {
-                    remote.srcObject = event.streams[0];
-                    remote.play().catch(() => {});
+                    remote.srcObject = event.streams[0]; remote.style.display = 'block'; remote.play().catch(() => {});
+                    const placeholder = document.querySelector('.doctor-stream-placeholder');
+                    if (placeholder) placeholder.style.display = 'none';
                 }
-                isCallConnected = true;
-                setCallStatus('Call connected', true);
-                startTimer();
+                isCallConnected = true; setCallStatus('Call connected', true); startTimer();
             };
             peerConnection.onicecandidate = event => {
-                if (event.candidate && callId) {
-                    api('/api/call/ice/' + encodeURIComponent(callId), { method: 'POST', body: JSON.stringify({ candidate: event.candidate }) })
-                        .catch(error => console.warn('Unable to send ICE candidate:', error));
-                }
+                if (event.candidate && callId) api('/api/call/ice/' + encodeURIComponent(callId), {
+                    method: 'POST', body: JSON.stringify({ candidate: event.candidate.toJSON ? event.candidate.toJSON() : event.candidate })
+                }).catch(error => console.warn('Unable to send ICE candidate:', error));
             };
             peerConnection.onconnectionstatechange = () => {
                 const state = peerConnection?.connectionState;
                 if (state === 'connected') { isCallConnected = true; setCallStatus('Call connected', true); startTimer(); }
-                else if (state === 'failed') setCallStatus('Connection failed — check network/TURN configuration');
-                else if (state === 'disconnected') setCallStatus('Connection interrupted — reconnecting');
-                else if (state === 'closed') setCallStatus('Call ended');
+                else if (state === 'failed') { isCallConnected = false; setCallStatus('Connection failed — a TURN server may be required'); }
+                else if (state === 'disconnected') { isCallConnected = false; setCallStatus('Connection interrupted'); }
+                else if (state === 'closed') { isCallConnected = false; setCallStatus('Call ended'); }
             };
             return peerConnection;
         }
         async function startOrJoinCall() {
             try {
-                if (!localStream) await initLocalCamera();
-                const payload = await api('/api/call/session', {
-                    method: 'POST',
-                    body: JSON.stringify({ appointment_id: appointmentId, role: currentRole })
-                });
-                callId = payload.call_id;
-                ensurePeerConnection();
-                if (payload.offer && !peerConnection.currentRemoteDescription) {
-                    await peerConnection.setRemoteDescription(payload.offer);
-                    await flushCandidates();
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
+                if (!mediaAttempted) await initLocalCamera();
+                const session = await api('/api/call/session', { method: 'POST', body: JSON.stringify({ appointment_id: appointmentId, role: currentRole }) });
+                callId = session.call_id; ensurePeerConnection();
+                if (session.offer && !peerConnection.currentRemoteDescription) {
+                    await peerConnection.setRemoteDescription(session.offer); await flushCandidates();
+                    const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer);
                     await api('/api/call/signal/' + encodeURIComponent(callId), { method: 'POST', body: JSON.stringify({ type: 'answer', description: peerConnection.localDescription }) });
-                } else if (payload.should_offer) {
+                } else if (session.should_offer) {
                     makingOffer = true;
-                    const offer = await peerConnection.createOffer();
-                    await peerConnection.setLocalDescription(offer);
+                    const offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
                     await api('/api/call/signal/' + encodeURIComponent(callId), { method: 'POST', body: JSON.stringify({ type: 'offer', description: peerConnection.localDescription }) });
                     makingOffer = false;
                 }
                 await pollSignals();
-                if (pollInterval) clearInterval(pollInterval);
-                pollInterval = setInterval(pollSignals, 1500);
-                setCallStatus('Joined room — connecting to participant');
-            } catch (error) {
-                console.error('Unable to join video call:', error);
-                setCallStatus(error.message || 'Unable to join call');
-            }
+                pollInterval = setInterval(pollSignals, 1200);
+                setCallStatus(localStream ? 'Waiting for the other participant to connect' : 'Joined call; local media unavailable');
+            } catch (error) { console.error('Unable to join call:', error); setCallStatus(error.message || 'Unable to join call'); }
         }
         async function pollSignals() {
             if (!callId || !peerConnection) return;
             try {
-                const data = await api('/api/call/signals/' + encodeURIComponent(callId));
-                for (const signal of (data.signals || [])) {
+                const data = await api('/api/call/signals/' + encodeURIComponent(callId) + '?after=' + lastSignalSeq);
+                for (const signal of data.signals || []) {
+                    lastSignalSeq = Math.max(lastSignalSeq, Number(signal.seq) || 0);
                     if (signal.type === 'offer' && !peerConnection.remoteDescription) {
-                        await peerConnection.setRemoteDescription(signal.description);
-                        await flushCandidates();
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
+                        await peerConnection.setRemoteDescription(signal.description); await flushCandidates();
+                        const answer = await peerConnection.createAnswer(); await peerConnection.setLocalDescription(answer);
                         await api('/api/call/signal/' + encodeURIComponent(callId), { method: 'POST', body: JSON.stringify({ type: 'answer', description: peerConnection.localDescription }) });
-                    } else if (signal.type === 'answer' && makingOffer === false && peerConnection.localDescription?.type === 'offer' && !peerConnection.remoteDescription) {
-                        await peerConnection.setRemoteDescription(signal.description);
-                        await flushCandidates();
+                    } else if (signal.type === 'answer' && !makingOffer && peerConnection.localDescription?.type === 'offer' && !peerConnection.remoteDescription) {
+                        await peerConnection.setRemoteDescription(signal.description); await flushCandidates();
                     } else if (signal.type === 'ice' && signal.candidate) {
-                        if (peerConnection.remoteDescription) await peerConnection.addIceCandidate(signal.candidate);
-                        else pendingCandidates.push(signal.candidate);
+                        if (peerConnection.remoteDescription) {
+                            try { await peerConnection.addIceCandidate(signal.candidate); } catch (error) { console.warn('ICE candidate rejected:', error); }
+                        } else pendingCandidates.push(signal.candidate);
                     } else if (signal.type === 'ended') {
-                        setCallStatus('The other participant ended the call');
-                        await cleanupCall(false);
+                        setCallStatus('The other participant ended the call'); await cleanupCall(false);
                     }
                 }
-            } catch (error) {
-                console.warn('Call signaling poll failed:', error);
-            }
+            } catch (error) { console.warn('Call signaling poll failed:', error); }
         }
         async function flushCandidates() {
             while (pendingCandidates.length && peerConnection?.remoteDescription) {
-                const candidate = pendingCandidates.shift();
-                try { await peerConnection.addIceCandidate(candidate); } catch (error) { console.warn('ICE candidate rejected', error); }
+                try { await peerConnection.addIceCandidate(pendingCandidates.shift()); }
+                catch (error) { console.warn('ICE candidate rejected:', error); }
             }
         }
         function toggleMic() {
-            isMicMuted = !isMicMuted;
-            (localStream?.getAudioTracks() || []).forEach(track => track.enabled = !isMicMuted);
-            const btn = document.getElementById('btnMicToggle');
-            btn?.classList.toggle('active-muted', isMicMuted);
-            if (btn) btn.innerHTML = isMicMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+            isMicMuted = !isMicMuted; (localStream?.getAudioTracks() || []).forEach(t => t.enabled = !isMicMuted);
+            const button = document.getElementById('btnMicToggle'); button?.classList.toggle('active-muted', isMicMuted);
+            if (button) button.innerHTML = isMicMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
         }
         function toggleCam() {
-            isCamOff = !isCamOff;
-            (localStream?.getVideoTracks() || []).forEach(track => track.enabled = !isCamOff);
-            const btn = document.getElementById('btnCamToggle');
-            btn?.classList.toggle('active-muted', isCamOff);
-            if (btn) btn.innerHTML = isCamOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
+            isCamOff = !isCamOff; (localStream?.getVideoTracks() || []).forEach(t => t.enabled = !isCamOff);
+            const button = document.getElementById('btnCamToggle'); button?.classList.toggle('active-muted', isCamOff);
+            if (button) button.innerHTML = isCamOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
         }
         async function toggleScreenShare() {
-            const btn = document.getElementById('btnScreenShare');
+            const button = document.getElementById('btnScreenShare');
             try {
                 if (!isScreenSharing) {
                     if (!navigator.mediaDevices?.getDisplayMedia) throw new Error('Screen sharing is not supported in this browser');
                     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-                    const screenTrack = screenStream.getVideoTracks()[0];
-                    const sender = peerConnection?.getSenders().find(item => item.track?.kind === 'video');
-                    if (sender && screenTrack) await sender.replaceTrack(screenTrack);
-                    isScreenSharing = true;
-                    screenTrack.onended = () => stopScreenShare();
-                    if (btn) { btn.style.background = '#0066ff'; btn.style.color = '#ffffff'; }
+                    const sender = getVideoSender(), track = screenStream.getVideoTracks()[0];
+                    if (!sender || !track) throw new Error('Video connection is not ready yet');
+                    await sender.replaceTrack(track); isScreenSharing = true; track.onended = () => stopScreenShare();
+                    if (button) { button.style.background = '#0066ff'; button.style.color = '#ffffff'; }
                     setCallStatus('Screen sharing active', isCallConnected);
                 } else await stopScreenShare();
             } catch (error) {
+                screenStream?.getTracks().forEach(t => t.stop()); screenStream = null; isScreenSharing = false;
                 setCallStatus(error.message || 'Unable to share screen', isCallConnected);
             }
         }
         async function stopScreenShare() {
             if (!isScreenSharing) return;
-            const cameraTrack = localStream?.getVideoTracks()[0];
-            const sender = peerConnection?.getSenders().find(item => item.track?.kind === 'video');
-            if (sender && cameraTrack) await sender.replaceTrack(cameraTrack);
-            if (screenStream) screenStream.getTracks().forEach(track => track.stop());
-            screenStream = null;
-            isScreenSharing = false;
-            const btn = document.getElementById('btnScreenShare');
-            if (btn) { btn.style.background = '#334155'; btn.style.color = '#f8fafc'; }
+            const sender = getVideoSender(), cameraTrack = localStream?.getVideoTracks()[0];
+            if (sender) await sender.replaceTrack(cameraTrack || null);
+            screenStream?.getTracks().forEach(t => t.stop()); screenStream = null; isScreenSharing = false;
+            const button = document.getElementById('btnScreenShare');
+            if (button) { button.style.background = '#334155'; button.style.color = '#f8fafc'; }
             setCallStatus(isCallConnected ? 'Call connected' : 'Screen sharing stopped', isCallConnected);
         }
         function switchSideTab(tabName) {
             document.querySelectorAll('.side-tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.side-tab-content').forEach(c => c.classList.remove('active'));
             const map = { details: ['tabBtnDetails', 'tabContentDetails'], chat: ['tabBtnChat', 'tabContentChat'], rx: ['tabBtnRx', 'tabContentRx'] };
-            const pair = map[tabName];
-            if (pair) pair.forEach(id => document.getElementById(id)?.classList.add('active'));
+            (map[tabName] || []).forEach(id => document.getElementById(id)?.classList.add('active'));
         }
         function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const value = (input?.value || '').trim();
+            const input = document.getElementById('chatInput'), value = (input?.value || '').trim();
             if (!value) return;
-            const wrap = document.getElementById('chatMessagesWrap');
-            const bubble = document.createElement('div');
-            bubble.className = 'chat-bubble self';
-            const author = document.createElement('strong');
-            author.textContent = 'You:';
-            bubble.append(author, document.createElement('br'), document.createTextNode(value));
-            wrap?.appendChild(bubble);
-            if (input) input.value = '';
-            if (wrap) wrap.scrollTop = wrap.scrollHeight;
+            const wrap = document.getElementById('chatMessagesWrap'), bubble = document.createElement('div'), author = document.createElement('strong');
+            bubble.className = 'chat-bubble self'; author.textContent = 'You:';
+            bubble.append(author, document.createElement('br'), document.createTextNode(value)); wrap?.appendChild(bubble);
+            if (input) input.value = ''; if (wrap) wrap.scrollTop = wrap.scrollHeight;
         }
         async function cleanupCall(notifyPeer = true) {
-            if (pollInterval) clearInterval(pollInterval);
-            if (timerInterval) clearInterval(timerInterval);
-            pollInterval = null;
-            timerInterval = null;
-            if (notifyPeer && callId) {
-                try { await api('/api/call/end/' + encodeURIComponent(callId), { method: 'POST', body: '{}' }); } catch (_) {}
-            }
-            if (screenStream) screenStream.getTracks().forEach(track => track.stop());
+            if (pollInterval) clearInterval(pollInterval); if (timerInterval) clearInterval(timerInterval);
+            pollInterval = timerInterval = null;
+            if (notifyPeer && callId) try { await api('/api/call/end/' + encodeURIComponent(callId), { method: 'POST', body: '{}' }); } catch (_) {}
+            screenStream?.getTracks().forEach(t => t.stop());
             if (peerConnection) { peerConnection.ontrack = null; peerConnection.close(); peerConnection = null; }
-            if (localStream) localStream.getTracks().forEach(track => track.stop());
-            localStream = null;
-            isCallConnected = false;
+            localStream?.getTracks().forEach(t => t.stop()); localStream = null; isCallConnected = false;
         }
         async function endConsultation() {
             if (!confirm('Are you sure you want to conclude this video consultation session?')) return;
-            await cleanupCall(true);
-            window.location.href = '/';
+            await cleanupCall(true); window.location.href = '/';
         }
         document.addEventListener('DOMContentLoaded', async () => {
             const remoteVideo = document.createElement('video');
-            remoteVideo.id = 'remoteVideoFeed';
-            remoteVideo.autoplay = true;
-            remoteVideo.playsInline = true;
-            remoteVideo.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0;background:#090d16;';
-            const mainWrap = document.getElementById('mainVideoWrap');
-            if (mainWrap) mainWrap.prepend(remoteVideo);
+            remoteVideo.id = 'remoteVideoFeed'; remoteVideo.autoplay = true; remoteVideo.playsInline = true;
+            remoteVideo.style.cssText = 'display:none;width:100%;height:100%;object-fit:cover;position:absolute;inset:0;background:#090d16;';
+            document.getElementById('mainVideoWrap')?.prepend(remoteVideo);
             setCallStatus('Preparing camera and microphone');
-            await initLocalCamera();
-            await startOrJoinCall();
+            await initLocalCamera(); await startOrJoinCall();
         });
         window.addEventListener('beforeunload', () => {
-            if (pollInterval) clearInterval(pollInterval);
-            if (localStream) localStream.getTracks().forEach(track => track.stop());
-            if (screenStream) screenStream.getTracks().forEach(track => track.stop());
-            if (peerConnection) peerConnection.close();
+            if (pollInterval) clearInterval(pollInterval); if (timerInterval) clearInterval(timerInterval);
+            localStream?.getTracks().forEach(t => t.stop()); screenStream?.getTracks().forEach(t => t.stop()); peerConnection?.close();
         });
     </script>
 </body>
