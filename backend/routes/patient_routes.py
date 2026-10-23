@@ -768,3 +768,18 @@ def api_webrtc_end(call_id):
                 _WEBRTC_ROOMS.pop(call_id, None)
     return jsonify({'success': True})
 
+
+@patient_bp.route('/api/call/leave/<path:call_id>', methods=['POST'])
+@login_required
+def api_webrtc_leave(call_id):
+    """Remove the current authenticated participant from a call room without sending another end event."""
+    user = get_current_user()
+    participant_id = str(user['_id'])
+    with _WEBRTC_LOCK:
+        room = _WEBRTC_ROOMS.get(call_id)
+        if room and participant_id in room['participants']:
+            room['participants'] = [pid for pid in room['participants'] if pid != participant_id]
+            room['updated_at'] = _call_time.time()
+            if not room['participants']:
+                _WEBRTC_ROOMS.pop(call_id, None)
+    return jsonify({'success': True})
